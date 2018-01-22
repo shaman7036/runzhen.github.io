@@ -1,0 +1,10 @@
+markdown: rdiscount
+permalink: /:year/:month/:title/
+url: 
+author:
+pygments: true
+production_url : 
+name: 
+description: 
+
+
