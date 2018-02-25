@@ -1,10 +1,10 @@
 ---
 layout: post
 comments: true
-title: 读书笔记 How to Read a Paper
+title: How to Read a Paper
 ---
 
-这是文的链接 [How to read a paper](/papers/howtoread.pdf)
+这是论文原文的链接 [How to read a paper](/papers/howtoread.pdf)
 
 
 ## The Three-pass Appoach
