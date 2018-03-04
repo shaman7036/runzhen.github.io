@@ -2,6 +2,8 @@
 layout: post
 comments: true
 title: How to Read a Paper
+category: 读书笔记
+tags: [paper]
 ---
 
 这是论文原文的链接 [How to read a paper](/papers/howtoread.pdf)

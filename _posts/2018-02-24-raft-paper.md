@@ -2,6 +2,8 @@
 layout: post
 comments: true
 title: Raft 一致性算法
+category: 分布式系统
+tags: [paper, distribution]
 ---
 
 论文原文链接 [In Search of an Understandable Consensus Algorithm](/papers/raft-extended.pdf)

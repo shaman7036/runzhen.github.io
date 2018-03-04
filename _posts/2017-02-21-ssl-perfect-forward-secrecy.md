@@ -2,6 +2,8 @@
 layout: post
 comments: true
 title: SSL/TLS Perfect Forward Secrecy
+category: Security 
+tags: [RSA, ECDHE, DHE, cryption]
 ---
 
 两个问题，一个是通信双方如何协商出一个对称加密的密钥（密钥交换），二是自己如何确认对方的服务器就是我想访问的，即认证。
@@ -36,7 +38,7 @@ title: SSL/TLS Perfect Forward Secrecy
 
 # RSA 握手过程
 
-![RSA handshake](http://blog.syscallx.com/pictures/ssl_handshake_rsa.png)
+![RSA handshake](/image/2017/ssl_handshake_rsa.png)
 
 简单的叙述一下几个过程：
 * client hello, client 发送自己支持的协议版本和算法，还包括一个client random
@@ -100,7 +102,7 @@ server 需要传递几个参数给client，同时，server 也要签发自己的
 **Client Key Exchange**
 client 在收到上一步的信息后，首先验证证书是它想访问的server的，同时也发送自己的参数给server。现在，client 和 server 都拥有了 DH 算法中的3个参数，然后分别计算 pre-master key，然后根据 client random, server random，pre-master key 生成 session key。
 
-![RSA handshake](http://blog.syscallx.com/pictures/ssl_handshake_diffie_hellman.png)
+![RSA handshake](/image/2017/ssl_handshake_diffie_hellman.png)
 
 以上就是一个粗略版本的 RSA 和 DH 握手过程，而ECDH 是基于ECC（Elliptic Curve Cryptosystems）的 DH 密钥交换算法。ECDH 每次用一个固定的DH key，所以并不支持forward sercecy，支持 forward sercecy 的是 ECDHE 算法或其他版本的ECDH算法。
 
