@@ -31,19 +31,25 @@ Wordpress 是我目前用的最长的博客系统了，从2009年左右一直到
 
 1. 安装 ruby 
 
-`sudo apt install ruby-full ruby-bundler` 
+`sudo apt install ruby-full ruby-bundler`    
 
-2. 安装 jekyll
+2. 安装 jekyll     
 
-`sudo gem install jekyll`
+`sudo gem install jekyll`       
 
-3. git clone github.io 上我的博客。
+3. git clone github.io 上博客源码。    
 
-4. jekyll build 博客
+4. jekyll build 博客      
 
 `jekyll build --destination /usr/local/nginx/html/myblog`  自动将生成的博客部署到指定目录下。至此，一个静态博客就部署完成了。
 
 云主机上我用的是自己编译的 nginx 服务器，通过设置 nginx 的配置文件，指定一个针对域名 "blog.nlogn.cn" 的虚拟主机，并把博客网站根目录指定为 "html/myblog" 就 OK 了。
+
+
+### 参考资料
+
+- https://bryceyang.github.io/blog/2017/06/26/Ubuntu%E5%AE%89%E8%A3%85jekyll/
+- https://www.xjtushilei.com/2017/05/19/jekyllinstall/ 
 
 
 
