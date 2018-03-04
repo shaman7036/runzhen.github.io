@@ -25,6 +25,8 @@ twitter_username: jekyllrb
 github_username:  jekyll
 
 permalink: /:year/:month/:title/
+name: Matrix
+author: Runz
 
 # Build settings
 markdown: kramdown
