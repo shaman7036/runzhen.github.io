@@ -1,5 +1,5 @@
 ---
-title: root@Matrix # 
+title: root 
 pagetitle: 空谷幽兰
 layout: page
 ---
