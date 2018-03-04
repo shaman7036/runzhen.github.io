@@ -22,14 +22,14 @@ Wordpress 是我目前用的最长的博客系统了，从2009年左右一直到
 
 ### 博客源代码
 
-博客的源码已经放在了我的 github 上，通过 github pages 服务这个博客已经可以运行，博客的地址是 `https://username.github.io`
+博客的源码已经放在了我的 github 上，通过 github pages 服务这个博客已经可以通过浏览器访问了。
 
 但是还是想在自己的云主机上也创建一个（太喜欢折腾了...），因此同样的一个博客内容在 xxx.github.io 上和云主机上各有一份，我的博客域名 	`blog.nlogn.cn` 随意指向其中一个（看我心情咯）。 
 
 
 ### Ubuntu 部署 Jekyll
 
-1\.  安装 ruby 
+1\.  安装 ruby    
 `sudo apt install ruby-full ruby-bundler`    
 
 2\.  安装 jekyll     
