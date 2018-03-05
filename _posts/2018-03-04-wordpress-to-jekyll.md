@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: true
-title: "博客十年的变迁: Wordpress 到 Jekyll"
+title: "博客十年的变迁: 从 Wordpress 到 Jekyll"
 category: 无分类
 tags: [blog]
 ---
@@ -33,7 +33,7 @@ Wordpress 是我目前用的最长的博客系统了，从2009年左右一直到
 `sudo apt install ruby-full ruby-bundler`    
 
 2\.  安装 jekyll     
-`sudo gem install jekyll`       
+`sudo gem install jekyll bundler minima`       
 
 3\.  git clone github.io 上博客源码。    
 
