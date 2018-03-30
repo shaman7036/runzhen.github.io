@@ -37,9 +37,9 @@ Raft 是一个强领导者算法，意思就是所有的数据以当前领导者
 
 Follower 把自己的 term+1，身份转变成 Candidate，向集群中其他 server 发起请求投票 RPC，当他获得大多数选票时，就成功当选。
 
-> 问题：他怎么知道 “大多数” 是多少？
+> 问题：他怎么知道 “大多数” 是多少？（etcd 的实现似乎是每个 server 知道集群里面有多少台服务器）
 
-在竞选的过程中， candidate 一直保持着 candidate 的身份知道下面三个事件中的任何一个发生：
+在竞选的过程中， candidate 一直保持着 candidate 的身份直到下面三个事件中的任何一个发生：
 
 1. 它赢得了选举，成为 leader
 2. 其他人赢得了选举
@@ -51,8 +51,15 @@ Follower 把自己的 term+1，身份转变成 Candidate，向集群中其他 se
 
 
 
-
 ## 5.3 日志复制
+
+当 follower 和 leader 的日志出现不一致时，以 leader 上的信息为准。follower 首先需要找到自己 logs 中与 leader 一致的最后的地方，然后从那个地方开始，把后面的 log 全部抹掉，复制 leader 的日志。这个过程发生在 AppendEntries RPC 的过程中。
+
+leader 为每个 follower 维护一个 nextIndex，表示leader 给这个 follower 发送下一条 logs 的 Index。
+
+当一个服务器赢得选举成为了 leader 之后，它初始化所有的 nextIndex 为 leader 最新的 `log index + 1`，如果一个 follower 的 log 和 leader 不一致，那么在下一次的 AppendEntries RPC 中，AppendEntries 一致性检查函数将返回 false。（一致性检查函数发现了不一致时，会自动删除掉 follower 上不一致的日志）
+
+当 leader 收到了AppendEntries RPC 返回 false，那么它知道日志出现了不一致，然后减少 nextIndex 的值，再次发送 RPC 尝试，直到成功为止。成功的时候的 nextIndex 值就是他们日志一致的地方，然后开始复制。
 
 
 ## 5.4 安全性
