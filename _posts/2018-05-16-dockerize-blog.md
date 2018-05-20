@@ -8,7 +8,7 @@ tags: [docker, dockerize]
 
 ### 前言
 
-在上一篇博客 [博客十年的变迁: 从 Wordpress 到 Jekyll](/2018/03/wordpress-to-jekyll/) 中，提到了把博客从原来的 Workpress 迁移到了 Jekyll, 开始用 Markdown 语法写博客正文，用 `jekyll build` 生成博客内容并部署到 Web 服务器。
+在上一篇博客 [从 Wordpress 到 Jekyll](/2018/03/wordpress-to-jekyll/) 中，提到了把博客从原来的 Workpress 迁移到了 Jekyll, 开始用 Markdown 语法写博客正文，用 `jekyll build` 生成博客内容并部署到 Web 服务器。
 
 最近这两天在考虑把 "jekyll build" 这个过程容器化，达到传说中 **一次部署到处运行** 的终极目标。 :-) 
 
@@ -42,7 +42,9 @@ jekyll build 是将 Markdown 语法写成的纯文本文件生成 html 文件，
 `docker commit CONTAINER runzhen/blog:v1`
 
 
-这样，一个编译环境就搭建完成了。（有了第一次成功经验后，上面这个步骤可以直接用 Dockefile 完成，我在完成了一个简单的 v1 版本，之后又用 Dockerfile 完成了 blog:v2 版本，其实可以一步到位。）
+这样，一个编译环境就搭建完成了。
+
+有了第一次成功经验后，上面这些步骤可以直接用 Dockerfile 完成，我在完成了一个简单的 v1 版本，之后又用 Dockerfile 完成了 blog:v2 版本，其实可以一步到位。
 
 
 以后每次写完博客生成新的 html 的时候，只要运行一下 `dcoker run`，再用一个简单的 Makefile 配合完成部署到 nginx，非常方便。
@@ -61,8 +63,7 @@ build:
 	docker build -t runzhen/blog:v2 .
 ```
 
-
-Dockfile 
+Dockerfile 
 ```
 FROM runzhen/blog:v1
 
