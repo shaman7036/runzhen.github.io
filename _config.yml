@@ -26,7 +26,7 @@ github_username:  jekyll
 
 permalink: /:year/:month/:title/
 name: Matrix
-author: Runz
+author: Runzhen
 
 # Build settings
 markdown: kramdown
