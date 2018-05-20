@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: true
-title: Raft 一致性算法
+title: Raft 一致性算法读书笔记
 category: 分布式系统
 tags: [paper, distribution]
 ---
