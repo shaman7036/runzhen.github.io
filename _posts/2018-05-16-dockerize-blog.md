@@ -29,7 +29,9 @@ jekyll build 是将 Markdown 语法写成的纯文本文件生成 html 文件，
 
 `docker pull jekyll/jekyll:latest`
 
-然后启动这个镜像并进入到容器中 (这一步如果非常清楚需要安装哪些软件的话可以用 Dockerfile 代替完成。)
+然后启动这个镜像并进入到容器中。
+
+这一步如果非常清楚需要安装哪些软件的话可以用 Dockerfile 代替完成。我在这里直接进入到容器中是因为并不清楚需要安装哪些依赖软件，需要一步一步 debug。
 
 `docker run --rm --volume=/LOCAL_DIR:/srv/jekyll -it jekyll/jekyll  /bin/bash`
 
@@ -40,7 +42,10 @@ jekyll build 是将 Markdown 语法写成的纯文本文件生成 html 文件，
 `docker commit CONTAINER runzhen/blog:v1`
 
 
-这样，一个编译环境就搭建完成了。以后每次写完博客生成新的 html 的时候，只要运行一下 `dcoker run`，再用一个简单的 Makefile 配合完成部署到 nginx，非常方便。
+这样，一个编译环境就搭建完成了。（有了第一次成功经验后，上面这个步骤可以直接用 Dockefile 完成，我在完成了一个简单的 v1 版本，之后又用 Dockerfile 完成了 blog:v2 版本，其实可以一步到位。）
+
+
+以后每次写完博客生成新的 html 的时候，只要运行一下 `dcoker run`，再用一个简单的 Makefile 配合完成部署到 nginx，非常方便。
 
 Makefile 如下：
 
@@ -55,6 +60,19 @@ all:
 build:
 	docker build -t runzhen/blog:v2 .
 ```
+
+
+Dockfile 
+```
+FROM runzhen/blog:v1
+
+MAINTAINER runzhen
+
+WORKDIR /srv/jekyll
+
+ENTRYPOINT jekyll build --destination  /tmp/
+```
+
 
 
 
