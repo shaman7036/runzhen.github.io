@@ -17,30 +17,26 @@ tags: [docker, dockerize]
 
 废话不多说，开始折腾。 首先要制定一下具体的目标：
 
-1. jekyll build 是将 Markdown 语法写成的纯文本文件生成 html 文件，这也是我希望将她容器化的部分，因为我并不希望再次搭建 jekyll 的环境，只要有一个稳定能用的编译环境就可以了。
+jekyll build 是将 Markdown 语法写成的纯文本文件生成 html 文件，这也是我希望将它容器化的部分，因为我并不希望再次搭建 jekyll 的环境，只要有一个稳定能用的编译环境就可以了。
 
-2. 生成了 html 文件以后，拷贝到 nginx 的目录下，这样就可以通过浏览器访问博客内容了，这是第二各部分。而我也在学习 nginx 的源码，希望时不时的能把我修改过的 nginx 部署到博客上，因此，`不容器化 nginx` 。 
+生成了 html 文件以后，拷贝到 nginx 的目录下，这样就可以通过浏览器访问博客内容了，这是第二各部分。而我也在学习 nginx 的源码，希望时不时的能把我修改过的 nginx 部署到博客上，因此，`不容器化 nginx` 。 
 
 ### 步骤
 
 首先去 [docker hub](https://hub.docker.com/r/runzhen/) 上找了一个可用的镜像 jekyll/jekyll，这个镜像已经部署好了一个基本的 jekyll 环境。
 
-```
-docker pull jekyll/jekyll:latest
-```
+`docker pull jekyll/jekyll:latest`
 
 然后启动这个镜像并进入到容器中 (这一步如果非常清楚需要安装哪些软件的话可以用 Dockerfile 代替完成。)
 
-```
-docker run --rm --volume=/LOCAL_DIR:/srv/jekyll -it jekyll/jekyll  /bin/bash
-```
+`docker run --rm --volume=/LOCAL_DIR:/srv/jekyll -it jekyll/jekyll  /bin/bash`
 
 安装一些自己的博客需要额外组件。
 
 最后在容器外用 docker 命令 commit，生成一个新的 image 
-```
-docker commit CONTAINER runzhen/blog:v1
-```
+
+`docker commit CONTAINER runzhen/blog:v1`
+
 
 这样，一个编译环境就搭建完成了。以后每次写完博客生成新的 html 的时候，只要运行一下 `dcoker run`，再用一个简单的 Makefile 配合完成部署到 nginx，非常方便。
 
