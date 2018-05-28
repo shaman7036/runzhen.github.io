@@ -50,6 +50,10 @@ footer{text-align:center;display:block;border-top:1px dashed #CCC;}
 footer small{font-size:13px;color:#AAA;}
 footer a{color:#888;text-decoration:none;}
 footer a:hover{border-bottom:1px dashed #BBB;text-decoration:none;}
+.paginator{font:14px Arial,Helvetica,sans-serif;color:#AAA;margin:20px 0;line-height:150%;display:block;}
+.paginator a,.paginator span{padding:0 4px;margin:2px;text-decoration:none;}
+.paginator .current-page{color:white;background:#ff0000;}
+.paginator a:hover{color:white;background:#83BF73;}
 
 #message a {
     /* display: block before hiding */

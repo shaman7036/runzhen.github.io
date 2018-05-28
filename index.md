@@ -18,7 +18,7 @@ layout: page
 {% endfor %}
 </ul>
 
-<div id="post-pagination">
+<div id="post-pagination" class="paginator">
   {% if site.previous_page %}
     {% if site.previous_page == 1 %}
     <a href="/">&lt;tPrevious</a>
