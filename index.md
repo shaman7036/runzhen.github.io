@@ -18,3 +18,37 @@ layout: page
 {% endfor %}
 </ul>
 
+<div id="post-pagination">
+  {% if site.previous_page %}
+    {% if site.previous_page == 1 %}
+    <a href="/">&lt;tPrevious</a>
+    {% else %}
+    <a href="/page{{site.previous_page}}">&lt;Previous</a>
+    {% endif %}
+  {% else %}
+    <span class="previous disabled">&lt;Previous</span>
+  {% endif %}
+
+      {% if site.page == 1 %}
+      <span class="current-page">1</span>
+      {% else %}
+      <a href="/">1</a>
+      {% endif %}
+
+    {% for count in (2..site.total_pages) %}
+      {% if count == site.page %}
+      <span class="current-page">{{count}}</span>
+      {% else %}
+      <a href="/page{{count}}">{{count}}</a>
+      {% endif %}
+    {% endfor %}
+
+  {% if site.next_page %}
+    <a class="next" href="/page{{site.next_page}}">Next&gt;</a>
+  {% else %}
+    <span class="next disabled" >Next&gt;</span>
+  {% endif %}
+  ({{ site.total_posts }} posts in total)
+</div>
+
+
