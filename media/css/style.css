@@ -46,6 +46,10 @@ h3{padding:.5em .2em;font-family:"Cuprum","Hiragino Sans GB","Microsoft YaHei",s
 h4{padding:.5em .2em;font-family:"Cuprum","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:1em;color:#333;}
 embed,object,iframe{display:block;margin:4px auto;}
 .gist{font-size: 13px;line-height:1.6;}
+footer{text-align:center;display:block;border-top:1px dashed #CCC;}
+footer small{font-size:13px;color:#AAA;}
+footer a{color:#888;text-decoration:none;}
+footer a:hover{border-bottom:1px dashed #BBB;text-decoration:none;}
 
 #message a {
     /* display: block before hiding */
