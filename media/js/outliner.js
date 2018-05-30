@@ -5,7 +5,7 @@
 
 $(function() {
     var dict = {};
-    $('h2').each(function (idx) {
+    $('h3').each(function (idx) {
         var title = $(this).text();
         var id = 'outline_' + idx;
         dict[title] = id;
