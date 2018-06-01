@@ -10,8 +10,13 @@
 .atv{color:#00FF00;}
 .dec{color:#00FF00;}
 
+
+/* 
+ * http://www.brendangregg.com/blog/2018-03-22/tcp-tracepoints.html
+ */
+
 pre.prettyprint {
-line-height:1.1; /*行间距*/
+line-height:1.1; /* 行间距 */
 font-size:15px;
 margin-top: 0px;
 margin-bottom: 0px;
@@ -23,6 +28,7 @@ max-width: 900px;
 overflow-x: scroll;
 padding: 8px 8px 8px 8px;
 }
+
 @media print {
     .str{color:#060;}
     .kwd{color:#006;font-weight:bold;}
