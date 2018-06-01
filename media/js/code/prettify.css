@@ -11,12 +11,17 @@
 .dec{color:#00FF00;}
 
 pre.prettyprint {
-margin-top: 20px;
-margin-bottom: 10px;
-background-color:#EEEEEE; /*f7f7f9*/
-padding-left:1em;
+line-height:1.1; /*行间距*/
 font-size:15px;
-line-height:1.1;
+margin-top: 0px;
+margin-bottom: 0px;
+background-color:#EEEEFF; /*f7f7f9*/
+border: #000000;
+border-style: dashed;
+border-width: 1px;
+max-width: 900px;
+overflow-x: scroll;
+padding: 8px 8px 8px 8px;
 }
 @media print {
     .str{color:#060;}
@@ -37,7 +42,7 @@ background-color:transparent;
 border: none;
 }
 code {
-color:#d14;
-background-color:#FFFFFF;
-border:1px solid #e1e1e8;
+color:#37c90a;
+background-color:#fef5ff;
+border:0px solid #EEEEFF;
 }
