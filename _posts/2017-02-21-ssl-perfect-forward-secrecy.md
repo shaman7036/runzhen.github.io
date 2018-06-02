@@ -1,6 +1,6 @@
 ---
 layout: post
-comments: true
+comments: no
 title: SSL/TLS Perfect Forward Secrecy
 category: Security 
 tags: [RSA, ECDHE, DHE, cryption]

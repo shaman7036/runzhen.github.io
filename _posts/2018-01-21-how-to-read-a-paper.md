@@ -1,6 +1,6 @@
 ---
 layout: post
-comments: true
+comments: no
 title: How to Read a Paper
 category: 读书笔记
 tags: [paper]

@@ -1,6 +1,6 @@
 ---
 layout: post
-comments: true
+comments: no
 title: "容器化博客的编译环境"
 category: Docker
 tags: [docker, dockerize]

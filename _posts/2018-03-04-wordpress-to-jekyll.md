@@ -1,6 +1,6 @@
 ---
 layout: post
-comments: true
+comments: no
 title: "博客十年的变迁: 从 Wordpress 到 Jekyll"
 category: 无分类
 tags: [blog]

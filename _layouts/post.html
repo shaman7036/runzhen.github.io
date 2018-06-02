@@ -39,7 +39,10 @@ layout: default
 {% endif %}
 </section>
 
+{% if page.comments %}
 {% include comments.md %}
+{% endif %}
+
 <script type="text/javascript">
 $(function(){
   $(document).keydown(function(e) {
