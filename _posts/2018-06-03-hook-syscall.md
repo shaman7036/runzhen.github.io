@@ -10,11 +10,11 @@ tags: [linux]
 
 那么问题来了，如何拦截一个系统调用 ? 有两种方法：
 
-- LD_PRELOAD 环境变量 : 直接作用在可执行文件上。
-- ptrace() : 拦截子进程的系统调用。
+- `LD_PRELOAD 环境变量` : 直接作用在可执行文件上 (准确的说是**拦截库函数**) 。
+- `ptrace()` : 拦截子进程的系统调用。
 
 
-## LD_PRELOAD
+## 1. LD_PRELOAD
 
 LD_PRELOAD 的优势:
 
@@ -23,12 +23,13 @@ LD_PRELOAD 的优势:
 
 例如我想拦截程序 A 所有调用 malloc() 的地方，那么程序 A 不需要任何修改，只要准备好自己的 malloc() 函数，编译成动态链接库 .so 文件，然后在运行 A 之前先用 LD_PRELOAD 设定好环境变量就可以了。
 
-LD_PRELOAD 的原理就是链接器在动态链接的时刻，优先链接 LD_PRELOAD 指定的函数。
+LD_PRELOAD 的原理就是链接器在动态链接的时刻，优先链接 LD_PRELOAD 指定的函数。准确的说 LD_PRELOAD 拦截的是动态库中的函数，但是一般我们写的应用程序都是通过库函数来调用系统调用 API，所以 LD_PRELOAD 也间接的拦截了系统调用。
 
 说到这里，LD_PRELOAD 的缺点也非常明显，它`只能作用于动态链接库`，要是静态链接的就没戏了。
 
+腾讯的 C++ 协程库 [libco](https://github.com/Tencent/libco)，以及 tcmalloc 的 TC_MALLOC 都用到了这种方式。
 
-## ptrace()
+## 2. ptrace()
 
 ptrace 是 linux 内核原生提供的一个功能，因此功能比 LD_PRELOAD 强大的多。它最初的目的是用来 debug 的，例如大名鼎鼎的 gdb 就是依赖于 ptrace。
 
