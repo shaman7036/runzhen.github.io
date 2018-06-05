@@ -42,9 +42,64 @@ ptrace 是 linux 内核原生提供的一个功能，因此功能比 LD_PRELOAD 
 以上两种方式，ptrace 都会拦截发送到 A 进程的所有信号（除 SIGKILL 外），然后我们需要自己选择哪些系统调用需要拦截，并在拦截后转到我们自己的处理函数。
 
 
-## Talk is cheap, show you the code
+# Talk is cheap, show you the code
+
+## LD_PRELOAD
+
+先来玩转一下 LD_PRELOAD，拦截 malloc() 函数。
+
+首先准备一个非常简单的测试程序 main.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[])
+{
+    char *p = (char *)malloc(100);
+    if (p) {
+        printf("malloc() success\n");
+    } else {
+        printf("malloc() return NULL\n");
+    }
+    return 0;
+}
+```
+
+正常情况下我们编译运行这个 c 文件，最后会显示 “malloc success”。
+
+再准备一个 hook.h 文件
+```c
+#ifndef _HOOK_H_
+#define _HOOK_H_
+
+#include <stdio.h>
+
+void *malloc(int size);
+
+#endif
+```
+hook.c 文件
+
+```c
+#include "hook.h"
+
+void * malloc(int size)
+{
+    return NULL;
+}
+```
+
+OK，万事俱备，下面来编译和链接：
+
+* `gcc hook.c -fPIC -shared -o libhook.so`，生成我们自己的 hook 动态链接库
+* `gcc main.c -o test`，生成 test 可执行文件。
+* `export LD_LIBRARY_PATH=.` 设置好环境变量。
+* `LD_PRELOAD=$PWD/hook.so ./test`
+
+最后一步做完，屏幕上将会看到 “malloc() return NULL”， 证明 malloc 已经被替换，并且返回了 NULL。
 
 
+## ptrace
 
 
 ### 其他资料
