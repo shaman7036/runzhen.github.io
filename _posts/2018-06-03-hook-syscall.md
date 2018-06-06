@@ -5,10 +5,7 @@ title: "如何拦截一个系统调用 ? "
 category: "Linux"
 tags: [linux]
 ---
-
-系统调用是用户态程序进入内核态的唯一途径，如果内核的系统调用处理函数存在 bug，那么攻击者就会利用这个漏洞拿到 root 权限。所以很多沙箱都会对系统调用进行拦截，或者拦截后自己处理（例如容器沙箱 gVisor）。
-
-那么问题来了，如何拦截一个系统调用 ? 有两种方法：
+如何拦截一个系统调用 ? 有两种方法：
 
 - `LD_PRELOAD 环境变量` : 直接作用在可执行文件上 (准确的说是**拦截库函数**) 。
 - `ptrace()` : 拦截子进程的系统调用。
@@ -31,7 +28,7 @@ LD_PRELOAD 的原理就是链接器在动态链接的时刻，优先链接 LD_PR
 
 ## 2. ptrace()
 
-ptrace 是 linux 内核原生提供的一个功能，因此功能比 LD_PRELOAD 强大的多。它最初的目的是用来 debug 的，例如大名鼎鼎的 gdb 就是依赖于 ptrace。
+ptrace 是 linux 内核原生提供的一个功能，因此功能比 LD_PRELOAD 强大的多。它最初的目的是用来 debug，例如大名鼎鼎的 gdb 就是依赖于 ptrace。
 
 要使用 ptrace 拦截程序 A 的系统调用，有两种方法：
 
@@ -42,14 +39,14 @@ ptrace 是 linux 内核原生提供的一个功能，因此功能比 LD_PRELOAD 
 以上两种方式，ptrace 都会拦截发送到 A 进程的所有信号（除 SIGKILL 外），然后我们需要自己选择哪些系统调用需要拦截，并在拦截后转到我们自己的处理函数。
 
 
-# Talk is cheap, show you the code
+### Talk is cheap, show you the code
 
 ## LD_PRELOAD
 
 先来玩转一下 LD_PRELOAD，拦截 malloc() 函数。
 
 首先准备一个非常简单的测试程序 main.c
-```c
+```
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -68,7 +65,7 @@ int main(int argc, char *argv[])
 正常情况下我们编译运行这个 c 文件，最后会显示 “malloc success”。
 
 再准备一个 hook.h 文件
-```c
+```
 #ifndef _HOOK_H_
 #define _HOOK_H_
 
@@ -80,7 +77,7 @@ void *malloc(int size);
 ```
 hook.c 文件
 
-```c
+```
 #include "hook.h"
 
 void * malloc(int size)
