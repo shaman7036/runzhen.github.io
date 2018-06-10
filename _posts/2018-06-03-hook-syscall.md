@@ -101,6 +101,7 @@ OK，万事俱备，下面来编译和链接：
 
 ### 其他资料
 * https://www.linuxjournal.com/article/6100
+* http://recursiveg.me/2014/04/programming-with-ptrace-part2/
 
 
 
