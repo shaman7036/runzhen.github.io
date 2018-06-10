@@ -1,12 +1,14 @@
 ---
 layout: post
 comments: no
-title: SSL/TLS Perfect Forward Secrecy
+title: "TLS Perfect Forward Secrecy 之 RSA 的缺陷"
 category: Security 
 tags: [RSA, ECDHE, DHE, cryption]
 ---
 
-HTTPS 这样的加密传输，最关键的是要解决`两个问题`，一个是通信双方如何协商出一个对称加密的密钥（密钥交换），二是自己如何确认对方的服务器就是我想访问的，即认证。
+HTTPS 这样的加密传输，最关键的是要解决两个问题，
+- `一个是通信双方如何协商出一个对称加密的密钥（密钥交换）`
+- `二是自己如何确认对方的服务器就是我想访问的，即认证。`
 
 第一个问题可以由非对称加密解决，第二个问题是证书的合法性校验，“签发数字签名”，指的是用hash函数，对证书中的发行者，有效期，证书名等信息计算得到一个摘要（digest），然后用私钥进行加密，得到签名A。而对应的“校验数字签名”，则是先用相同的hash函数得到digest, 再利用相应的公钥解密A，然后对比自己hash出的和解密出的A是否相同，以此来认证对方是不是我们想要通信的人。
 
@@ -30,9 +32,7 @@ HTTPS 这样的加密传输，最关键的是要解决`两个问题`，一个是
 
 在探讨 `Perfect Forward Secrecy` 之前，先来回顾一下旧的 TLS 握手过程会有什么缺陷。
 
-# 没有 PFS 的 RSA 握手过程
-
-![RSA handshake](/image/2017/ssl_handshake_rsa.png){:height="700" width="700"}
+## 没有 PFS 的 RSA 握手过程
 
 ### 第一步，ClientHello
 
@@ -66,87 +66,42 @@ HTTPS 这样的加密传输，最关键的是要解决`两个问题`，一个是
 
 注意，上面三步我们提到了三次 **随机数**，这三个随机数是不一样的：
 
-1. client random
-2. server random
-3. 第三个最特别，被称为 PreMaster Key，它是由 client 用 RSA 或者 Diffie-Hellman 加密算法生成的。
+- client random
+- server random
+- 第三个最特别，被称为 PreMaster Key，它是由 client 用 RSA 或者 Diffie-Hellman 加密算法生成的。
 
 前面两者都随着 ClientHello，ServerHello `明文传输`，而 PreMaster Key 是需要用服务器的公钥加密后传给server，然后 server 用自己的私钥解密。
 
-至此，客户端和服务器都有了相同的`三个随机数`，然后它们会分别使用一个 PRF(Pseudo-Random Function) 来产生 master-secret。
+至此，客户端和服务器都有了相同的`三个随机数`，然后它们会分别使用一个 PRF(Pseudo-Random Function) 来产生一个`相同的` master-secret。
 
 > master_secret = PRF(pre_master_secret, ClientHello.random + ServerHello.random)
 
-master_secret 是一组秘钥，包含6各部分，但是对于非密码研究人员来说不需要知道的太详细，我们只要知道，master_secret 包含了对称加密的秘钥，也就是真正对传输的数据进行加密的秘钥。
+master secret 是一组秘钥，包含6各部分，对于我们非密码学研究人员来说，我们只要知道，master secret 包含了对称加密的秘钥，也就是真正对传输的数据进行加密的秘钥。
 
+## 缺陷
 
-这种方式把文章开头说过的**密钥交换**和**认证**用一个步骤解决了。背后的逻辑是：如果 server 可以生成正确的session key，那么它必定是有正确的私钥的。而这种方式的缺点是，一旦私钥泄露，那么攻击者可以解密所有的数据，更极端的情况是，攻击者可以先抓包保留几年的历史数据，一旦某天私钥泄露，那么之前的所有加密数据都可以被解密出来。
+有了上一节的基础知识之后，再回过头看看本文一开头说的两个问题，密钥协商和认证，会发现：`服务器的私钥同时用在了这两个过程中。` 
 
-这种情况下，就催生出了 DH 密钥交换算法。(说“催生出”倒也不适合，确切的说DH算法和RSA几乎是同一时期出现的，但是没有RSA运用那么广泛，等到大家发现RSA在密钥交换中存在的缺陷时，暮然回首，发现在DH算法基础上做一些改动，就可以解决Perfect Forward Secrecy的问题。这个故事是不是可以提醒我们，当现有的技术出现困难时，是不是可以参考一下这个领域发表的一些经典老论文，说不定会有灵感。)
+在密钥协商阶段，服务器用私钥解密客户端发来的 PreMaster Key；在认证阶段，服务器发送的证书，证书中有一个数字签名，而这个签名是由证书基本信息的 hash 值再经过私钥加密得来的。
 
-# DH 握手过程
+这种方式把的逻辑是：如果 server 可以生成正确的session key，那么它必定是有正确的私钥的。
 
-首先来看一下 DH 算法的数学基础。
+而这种方式的缺点也非常严重，一旦私钥泄露，那么攻击者可以解密所有的数据，更极端的情况是，攻击者可以先抓包保留几年的历史数据，一旦某天私钥泄露，那么之前的所有加密数据都可以被解密出来。
 
-```
-+-------------------------------------------------------------------+
-|                    Global Pulic Elements                          |
-|                                                                   |
-|       p                               prime number                |
-|       a                               prime number, a < p         |
-+-------------------------------------------------------------------+
-+-------------------------------------------------------------------+
-|                    User A Key Generation                          |
-|                                                                   |
-|       Select private Xa               Xa < p                      |
-|       Calculate public Ya             Ya = a^Xa mod p             |
-+-------------------------------------------------------------------+
-+-------------------------------------------------------------------+
-|                    User B Key Generation                          |
-|                                                                   |
-|       Select private Xb               Xb < p                      |
-|       Calculate public Yb             Yb = a^Xb mod p             |
-+-------------------------------------------------------------------+
-+-------------------------------------------------------------------+
-|               Calculation of Secret Key by User A                 |
-|                                                                   |
-|       Secret Key K                    K = Yb^Xa mod p             |
-+-------------------------------------------------------------------+
-+-------------------------------------------------------------------+
-|               Calculation of Secret Key by User B                 |
-|                                                                   |
-|       Secret Key K                    K = Ya^Xb mod p             |
-+-------------------------------------------------------------------+
+这种情况下，就催生出了 DH 密钥交换算法。说“催生出”倒也不适合，确切的说DH算法和RSA几乎是同一时期出现的，但是没有RSA运用那么广泛，等到大家发现RSA在密钥交换中存在的缺陷时，暮然回首，发现在DH算法基础上做一些改动，就可以解决Perfect Forward Secrecy的问题。这个故事是不是可以提醒我们，当现有的技术出现困难时，是不是可以参考一下这个领域发表的一些经典老论文，说不定会有灵感。
 
-```
+关于如何用 DH 算法解决 RSA 的这个缺陷，请移步下一篇 [](/2017/03/pfs-ecdhe/)
 
-上面一共出现了 a, p, Xa, Ya, Xb, Yb, K 共 7 个数，其中：
+最后放上一张 RSA 握手过程的图。
 
-* 公开的数：a, p, Ya, Yb    
-* 非公开数：Xa, Xb, K    
-
-通常情况下，a 一般为 2 或 5，而 p, Xa 和 Xb 的取值也非常大，其复杂度至少为 `O(p^0.5)`。对于攻击者来说，已知 Ya，Xa 的求解非常困难，同理 Xb 的求解也很困难，所以攻击者难以求出 K，所以 DH 能够保证通信双方在透明的信道中安全的交换密钥。
-
-值得注意的是，*DH 算法本身并没有提供通讯双方的身份验证功能，也就是说 DH 算法会被中间人攻击。* 这时就需要 DSA（数字签名算法）来对传输的数据进行签名，这样使得接受双方可以确认信息的来源。
-
-在握手过程中，client hello 和 server hello 过程都与RSA是一样的，RSA 的第三步是 “client key exchange”，而 ECDHE 的第三步是 “server key exchange”。
-
-**Server Key Exchange** 
-server 需要传递几个参数给client，同时，server 也要签发自己的数字签名，以便client 能够校验（验明正身）。在server key exchange 阶段，以上信息会被发给client。
-
-**Client Key Exchange**
-client 在收到上一步的信息后，首先验证证书是它想访问的server的，同时也发送自己的参数给server。现在，client 和 server 都拥有了 DH 算法中的3个参数，然后分别计算 pre-master key，然后根据 client random, server random，pre-master key 生成 session key。
-
-![RSA handshake](/image/2017/ssl_handshake_diffie_hellman.png)
-
-以上就是一个粗略版本的 RSA 和 DH 握手过程，而ECDH 是基于ECC（Elliptic Curve Cryptosystems）的 DH 密钥交换算法。ECDH 每次用一个固定的DH key，所以并不支持forward sercecy，支持 forward sercecy 的是 ECDHE 算法或其他版本的ECDH算法。
-
-# ECDHE 的具体过程
-
+![RSA handshake](/image/2017/ssl_handshake_rsa.png)
 
 
 参考资料
 * https://blog.cloudflare.com/keyless-ssl-the-nitty-gritty-technical-details/
 * https://vincent.bernat.im/en/blog/2011-ssl-perfect-forward-secrecy#diffie-hellman-with-discrete-logarithm
+* https://www.zhihu.com/question/54320042
+* https://www.acunetix.com/blog/articles/establishing-tls-ssl-connection-part-5/
 
 
 
