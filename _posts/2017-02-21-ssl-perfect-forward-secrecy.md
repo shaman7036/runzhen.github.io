@@ -6,7 +6,7 @@ category: Security
 tags: [RSA, ECDHE, DHE, cryption]
 ---
 
-两个问题，一个是通信双方如何协商出一个对称加密的密钥（密钥交换），二是自己如何确认对方的服务器就是我想访问的，即认证。
+HTTPS 这样的加密传输，最关键的是要解决`两个问题`，一个是通信双方如何协商出一个对称加密的密钥（密钥交换），二是自己如何确认对方的服务器就是我想访问的，即认证。
 
 第一个问题可以由非对称加密解决，第二个问题是证书的合法性校验，“签发数字签名”，指的是用hash函数，对证书中的发行者，有效期，证书名等信息计算得到一个摘要（digest），然后用私钥进行加密，得到签名A。而对应的“校验数字签名”，则是先用相同的hash函数得到digest, 再利用相应的公钥解密A，然后对比自己hash出的和解密出的A是否相同，以此来认证对方是不是我们想要通信的人。
 
@@ -21,14 +21,6 @@ tags: [RSA, ECDHE, DHE, cryption]
 
 相比传统的 RSA 握手，ECDHE 能支持 forward secrecy(DH 算法本身没有forward secrecy，要 ECDHE 才行)。DH 算法让 client 和 server 分别独立的计算出同步加密的密钥，注意：是独立计算出，而不是通过一方传递给另一方。
 
-# 概念
-
-首先明确一下几个概念。   
-* session key, 是SSL/TLS 中真正对数据进行加密的密钥，这是对称加密。 
-* client random，client 为每次密钥协商随机产生的32字节内容。
-* server random，同上。
-* pre-master key， 48字节的内容，由client random 和 server random 生成。
-
 加密套件，类似于 “ECDHE-ECDSA-AES256-SHA384” 这样的一串，主要包含这些信息：
 
 * 密钥协商的算法，要么 RSA，要么 DH
@@ -36,14 +28,56 @@ tags: [RSA, ECDHE, DHE, cryption]
 * 同步加密的方法，即 session key 所属的类型
 * hash 函数，保证传输的用户数据的完整性
 
-# RSA 握手过程
+在探讨 `Perfect Forward Secrecy` 之前，先来回顾一下旧的 TLS 握手过程会有什么缺陷。
 
-![RSA handshake](/image/2017/ssl_handshake_rsa.png)
+# 没有 PFS 的 RSA 握手过程
 
-简单的叙述一下几个过程：
-* client hello, client 发送自己支持的协议版本和算法，还包括一个client random
-* server hello，server 选择好各种参数和加密套件，还包括一个server random 和 证书，证书中有server的公钥信息。
-* client key exchange，client 拿到证书以后，首先校验证书是属于client想访问的server的，然后结合client random, server random 生成 pre-master key，并且用公钥加密好后发送给server。server 拿到之后，用私钥解密得到 pre-master key，此时双方都有了计算 session key 的三个参数了，双方都会给对方发送用 session key 加密后的 “finished”，之后的通信数据也都是加密的了。
+![RSA handshake](/image/2017/ssl_handshake_rsa.png){:height="700" width="700"}
+
+### 第一步，ClientHello
+
+这一步，客户端向服务器提供以下信息：
+
+1. 支持的协议版本，比如TLS 1.2
+2. 一个客户端生成的随机数，用于生成 Master Secret。
+3. 支持的加密方法，比如RSA公钥加密
+4. 支持的压缩方法
+
+### 第二步，SeverHello
+
+服务端在接收到客户端的 ClientHello 之后，需要将自己的证书发送给客户端，这个证书是对于服务端的一种认证。例如，客户端收到了一个来自于称自己是 alipay.com 的数据，但是如何证明对方是合法的 alipay 呢？这就是证书的作用，支付宝的证书可以证明它是 alipay，而不是财付通。
+
+证书由专门的数字证书认证机构(CA)审核之后颁发服务器。数字证书包括一个所谓的“证书”，还有一个私钥和公钥。私钥由服务端自己保存，公钥则是附带在证书的信息中。证书本身也附带一个证书电子签名，这个签名用来验证证书的完整性和真实性。
+
+这一步，服务器向客户端提供以下信息：
+
+1. 确认使用的加密通信协议版本，比如TLS 1.2版本。
+2. 一个服务器生成的随机数，用于生成 Master Secret。
+3. 确认使用的加密方法，比如RSA公钥加密
+4. 服务器证书
+
+### 第三步，客户端回应
+
+客户端需要对服务端的证书进行检查，如果证书没有问题，客户端就会从服务器证书中取出服务器的公钥。向服务器发送下面三项信息：
+
+1. 一个随机数 PreMaster Key 。该随机数用服务器公钥加密，防止被窃听。
+2. 编码改变通知，表示随后的信息都将用双方商定的加密方法和密钥发送
+3. 客户端握手结束通知，表示客户端的握手阶段已经结束。这一项同时也是前面发送的所有内容的hash值，用来供服务器校验
+
+注意，上面三步我们提到了三次 **随机数**，这三个随机数是不一样的：
+
+1. client random
+2. server random
+3. 第三个最特别，被称为 PreMaster Key，它是由 client 用 RSA 或者 Diffie-Hellman 加密算法生成的。
+
+前面两者都随着 ClientHello，ServerHello `明文传输`，而 PreMaster Key 是需要用服务器的公钥加密后传给server，然后 server 用自己的私钥解密。
+
+至此，客户端和服务器都有了相同的`三个随机数`，然后它们会分别使用一个 PRF(Pseudo-Random Function) 来产生 master-secret。
+
+> master_secret = PRF(pre_master_secret, ClientHello.random + ServerHello.random)
+
+master_secret 是一组秘钥，包含6各部分，但是对于非密码研究人员来说不需要知道的太详细，我们只要知道，master_secret 包含了对称加密的秘钥，也就是真正对传输的数据进行加密的秘钥。
+
 
 这种方式把文章开头说过的**密钥交换**和**认证**用一个步骤解决了。背后的逻辑是：如果 server 可以生成正确的session key，那么它必定是有正确的私钥的。而这种方式的缺点是，一旦私钥泄露，那么攻击者可以解密所有的数据，更极端的情况是，攻击者可以先抓包保留几年的历史数据，一旦某天私钥泄露，那么之前的所有加密数据都可以被解密出来。
 
