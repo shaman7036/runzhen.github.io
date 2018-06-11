@@ -1,6 +1,6 @@
 ---
 layout: post
-comments: no
+comments: yes
 title: "如何拦截一个系统调用 ? "
 category: "Linux"
 tags: [linux]

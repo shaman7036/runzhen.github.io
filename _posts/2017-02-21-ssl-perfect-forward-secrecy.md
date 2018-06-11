@@ -1,6 +1,6 @@
 ---
 layout: post
-comments: no
+comments: yes
 title: "TLS Perfect Forward Secrecy 之 RSA 的缺陷"
 category: Security 
 tags: [RSA, ECDHE, DHE, cryption]
