@@ -44,8 +44,37 @@ tags: [linux]
 
 下面就用 epoll 直观的感受一下多个进程同时被唤醒的情况。完整的代码在[这里下载](/image/2018/epoll_server.c)
 
+```
+   /* make socket non blocking */
+    flags |= O_NONBLOCK;
+    ret = fcntl(fd, F_SETFL, flags);
+
+    event.data.fd = fd; /* socket fd */
+    event.events = EPOLLIN;
+
+    /* add socket fd to epoll efd */
+    ret = epoll_ctl(efd, EPOLL_CTL_ADD, fd, &event); 
+
+    while (1) {
+        n = epoll_wait(efd, eventsp, MAX_EVENT, -1);
+        printf("child [%d] wake up from epoll_wait\n", getpid());
+
+        /* sleep to make the "thundering herd" happen */
+        sleep(1);
+
+        for (i = 0; i < n; i++) {
+            infd = accept(fd, &in_addr, &in_len);
+            printf("child %d accept successed\n", getpid());
+        }
+    }
+```
+
+运行上面的代码后，得到下面这样的输出，可以看出，5 个子进程确实都被唤醒了。
+
 ![](image/2018/epoll.png){:height="300" width="300"}
 
+### TODO  
+nginx 中的 epool 和 accept_mutex
 
 ## 参考资料 
 
