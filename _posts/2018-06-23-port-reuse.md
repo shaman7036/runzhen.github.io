@@ -71,7 +71,7 @@ tags: [linux]
 
 运行上面的代码后，得到下面这样的输出，可以看出，5 个子进程确实都被唤醒了。
 
-![](/image/2018/epoll.png){:height="300" width="300"}
+![result](/image/2018/epoll.png){:height="300" width="300"}
 
 ### TODO  
 nginx 中的 epool 和 accept_mutex
