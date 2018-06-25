@@ -40,7 +40,7 @@ tags: [linux]
 
 回顾上一小节的“端口重用”，进程1 和进程2 都监听在 1234 端口上，在运行到 accept() 函数后，进程阻塞进入睡眠状态，当有请求到达时，这两个进程会被同时唤醒；如果有100个进程，那么这100个都会全部唤醒。
 
-不过，在搜索了网上的资料后，有的提到 Linux 内核已经解决了 accept() 函数的惊群问题，但是目前我没有找到对应的 changelist，而且我没想出一个方法可以直观的看到是不是真的只有一个进程被唤醒了。
+不过，在搜索了网上的资料后，有的提到 Linux 内核已经解决了 accept() 函数的惊群问题，但是目前我没有找到对应的 changelist，而且对于 accept() 函数，我没想出一个方法可以直观的看到是不是真的只有一个进程被唤醒了。
 
 下面就用 epoll 直观的感受一下多个进程同时被唤醒的情况。完整的代码在[这里下载](/image/2018/epoll_server.c)
 
@@ -74,11 +74,11 @@ tags: [linux]
 ![result](/image/2018/epoll.png)
 
 ### TODO  
-nginx 中的 epool 和 accept_mutex
+nginx 中的 epoll 和 accept_mutex
 
 ## 参考资料 
 
-- 既然提到了 `SO_REUSEPORT`，还有一个 `SO_REUSEADDR`，[请移步](https://zhuanlan.zhihu.com/p/31329253)
+- 既然提到了 `SO_REUSEPORT`，还有一个 `SO_REUSEADDR`，[请看这里](https://zhuanlan.zhihu.com/p/31329253)
 - https://pureage.info/2015/12/22/thundering-herd.html
 - https://www.cnblogs.com/Anker/p/7071849.html
 
