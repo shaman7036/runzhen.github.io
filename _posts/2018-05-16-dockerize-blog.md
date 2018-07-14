@@ -8,7 +8,7 @@ tags: [docker, dockerize]
 
 ## 前言
 
-在上一篇博客 [从 Wordpress 到 Jekyll](/2018/03/wordpress-to-jekyll/) 中，提到了把博客从原来的 Workpress 迁移到了 Jekyll, 开始用 Markdown 语法写博客正文，用 `jekyll build` 生成博客内容并部署到 Web 服务器。
+在上一篇博客 [从 Wordpress 到 Jekyll](/wordpress-to-jekyll/) 中，提到了把博客从原来的 Workpress 迁移到了 Jekyll, 开始用 Markdown 语法写博客正文，用 `jekyll build` 生成博客内容并部署到 Web 服务器。
 
 最近这两天在考虑把 "jekyll build" 这个过程容器化，达到传说中 **一次部署到处运行** 的终极目标。 :-) 
 
