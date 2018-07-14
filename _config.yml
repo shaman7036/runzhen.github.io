@@ -24,7 +24,7 @@ url: "https://blog.nlogn.cn" # the base hostname & protocol for your site, e.g. 
 twitter_username: jekyllrb
 github_username:  jekyll
 
-permalink: /:year/:month/:title/
+permalink: /:title/
 name: Matrix
 author: Runzhen
 
