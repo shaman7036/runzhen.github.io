@@ -28,7 +28,7 @@ permalink: /:title/
 name: Matrix
 author: Runzhen
 
-paginate: 15
+paginate: 20
 
 # Build settings
 markdown: kramdown
