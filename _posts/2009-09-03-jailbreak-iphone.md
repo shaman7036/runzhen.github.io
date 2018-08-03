@@ -22,7 +22,7 @@ tags: [jailbreak]
 
 先来一张万恶的卡贴：
 
-![pic1](/image/2009/iphone1.jgp)
+![pic1](/image/2009/iphone1.jpg)
 
 
 ![pic2](/image/2009/iphone2.png)
