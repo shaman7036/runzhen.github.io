@@ -4,7 +4,7 @@ import "fmt"
 
 type Node struct {
 	val    rune
-	termi  bool // a key's termination
+	termi  bool
 	depth  int
 	meta   interface{}
 	parent *Node
