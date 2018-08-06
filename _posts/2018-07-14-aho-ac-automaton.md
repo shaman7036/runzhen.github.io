@@ -108,6 +108,6 @@ func TestBasic(t *testing.T) {
 - [前缀树匹配(Double Array Trie)](https://turbopeter.github.io/2013/09/02/prefix-match/)
 - [Trie树的数组实现原理](http://blog.jqian.net/post/trie.html)
 - [AC 自动机在 Tengine 中的应用](http://blog.aka-cool.net/blog/2013/08/03/aho-corasick-automaton-in-tengine/)
-
+- https://www.cnblogs.com/xudong-bupt/p/3433506.html
 
 
