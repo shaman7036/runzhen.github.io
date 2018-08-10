@@ -1,11 +1,10 @@
 ---
 layout: post
 comments: yes
-title: "如何拦截一个系统调用 ? "
+title: "如何拦截库函数调用 ? "
 category: "Linux"
 tags: [linux]
 ---
-如何拦截一个系统调用 ? 有两种方法：
 
 - `LD_PRELOAD 环境变量` : 直接作用在可执行文件上 (准确的说是**拦截库函数**) 。
 - `ptrace()` : 拦截子进程的系统调用。
@@ -38,8 +37,6 @@ ptrace 是 linux 内核原生提供的一个功能，因此功能比 LD_PRELOAD 
 
 以上两种方式，ptrace 都会拦截发送到 A 进程的所有信号（除 SIGKILL 外），然后我们需要自己选择哪些系统调用需要拦截，并在拦截后转到我们自己的处理函数。
 
-
-### Talk is cheap, show you the code
 
 ## LD_PRELOAD
 
