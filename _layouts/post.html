@@ -17,16 +17,15 @@ layout: default
 <section class="meta_home">
 -----------------------
 <br />
+
+  <a {% if page.previous %} href="{{ site.url }}{{ page.previous.url }}" class="pageNav"{% endif %} {% unless page.previous %} class="pageNavInvalid" {% endunless %} >Previous</a>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="{{ site.url }}">返回首页</a>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a {% if page.next %} href="{{ site.url }}{{ page.next.url }}" class="pageNav"{% endif %} {% unless page.next %} class="pageNavInvalid" {% endunless %} >Next</a>
+
 <br />
 </section>
-
-<span>
-    <a {% if page.previous %} href="{{ site.url }}{{ page.previous.url }}" class="pageNav"{% endif %} {% unless page.previous %} class="pageNavInvalid" {% endunless %} >Previous</a>
-    &nbsp;&nbsp;&nbsp;
-    <a {% if page.next %} href="{{ site.url }}{{ page.next.url }}" class="pageNav"{% endif %} {% unless page.next %} class="pageNavInvalid" {% endunless %} >Next</a>
-</span>
-
 
 
 {% if page.comments %}
