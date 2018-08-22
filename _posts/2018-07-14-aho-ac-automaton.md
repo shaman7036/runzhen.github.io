@@ -6,6 +6,9 @@ category: "algorithm"
 tags: [algorithm, aho, ac, automaton]
 ---
 
+*  目录
+{:toc}
+
 AHO 算法，或者叫 AC 自动机、又或者叫 Aho–Corasick string matching algorithm，是一个高效的多模式匹配算法，它的特点是可以同时匹配多个模式串。
 
 最常见的应用就是`病毒扫描` : 把所有病毒的特征码（类似一段字符串）构造成一个 AC 自动机，把用户的文件或者网络数据流作为输入文本，只要在输入文本中找到了任何一个特征码，那么就表示有病毒存在。
