@@ -35,23 +35,40 @@ tags: [linux, kernel]
 伪代码如下。
 
 ```
-int maxsum(l,u)
-    if (l > u)
-      return 0;
-    if (l == u)
-      return max(0,x[l])
-    m = (l+u)/2
-    lmax = sum = 0
+    int maxSubArray(std::vector<int>& nums) {
+        return maxsum(nums, 0, nums.size()-1);
+    }
 
-    for(i = m;i >= l, i--)
-       sum += x[i]
-       lmax = max(lmax,sum)
-    rmax=sum=0;
+    int maxsum(std::vector<int> &nums, int left, int right) {
 
-    for i=(m,u]
-       sum += x[i]
-       rmax = max(rmax,sum)
-return max(lmax+rmax,maxsum(l,m),maxsum(m+1,u))
+        if (left > right) {
+            return 0;
+        }
+
+        if (left == right) {
+            return nums[left];
+        }
+
+        int mid = (left + right)/2;
+
+        int left_max = INT_MIN, right_max = INT_MIN;
+        int tmp_max = 0;
+
+        for (int i = mid; i >= left; i--) {
+            tmp_max += nums[i];
+            left_max = std::max(left_max, tmp_max);
+        }
+
+        tmp_max = 0;
+        for (int i = mid+1; i <= right; i++) {
+            tmp_max += nums[i];
+            right_max = std::max(right_max, tmp_max);
+        }
+
+        return std::max(left_max+right_max,
+                        std::max(maxsum(nums, left, mid),
+                        maxsum(nums, mid+1, right)));
+    }
 ```
 
 ### 解法4：扫描法
