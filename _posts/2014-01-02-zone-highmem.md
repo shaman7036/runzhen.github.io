@@ -46,7 +46,7 @@ tags: [linux, kernel]
 
 ### 参考资料
 
-![](image/2014/mem1.jpeg)
+![](/image/2014/mem1.jpeg)
 
 - [http://adam8157.info/blog/2012/07/linux-x86-64-vm](http://adam8157.info/blog/2012/07/linux-x86-64-vm)
 - [https://en.wikipedia.org/wiki/X86-64](https://en.wikipedia.org/wiki/X86-64)
