@@ -42,12 +42,12 @@ padding: 8px 8px 8px 8px;
 }
 
 pre code {
-font-family:"Courier New",monospace;
+font-family:"Courier New", monospace;
 background-color:transparent;
 border: none;
 }
 code {
 color:#000000;
-background-color:#f8f5ec;
+background-color:#EEEEFF;
 border:0px solid #EEEEFF;
 }

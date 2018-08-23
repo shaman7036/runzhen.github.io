@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: yes
-title: "Linux 内核在 x86-64 上的分区"
+title: "Linux 内核在 x86-64 上的内存分区"
 category: linux
 tags: [linux, kernel]
 ---
