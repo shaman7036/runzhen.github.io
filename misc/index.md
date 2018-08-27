@@ -6,7 +6,7 @@ layout: page
 
 # 基本数据结构
 
-[二叉树](./2018-08-27-binary-tree/index.html)
+[二叉树](./2018-08-27-binary-tree/)
 
 [图]()
 
