@@ -6,6 +6,8 @@ category:
 tags: 
 ---
 
+* Table
+{:toc}
 
 ## 二叉树的遍历
 
@@ -15,6 +17,7 @@ tags:
 
 ## 递归遍历
 
+前序：
 ```c
     void preorder(TreeNode *root, vector<int> &result) {
         if (root == NULL)
@@ -26,6 +29,7 @@ tags:
     }
 ```
 
+中序：
 ```c
     void inorder(TreeNode *root, vector<int> &result) {
         if (root == NULL) {
@@ -36,6 +40,8 @@ tags:
         inorder(root->right, result);
     }
 ```
+
+后序：
 
 ```c
     void postorder(TreeNode *root, vector<int> &result) {
