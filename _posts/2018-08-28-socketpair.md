@@ -1,6 +1,6 @@
 ---
 layout: post
-comments: no
+comments: yes
 title: "使用 socketpair 实现进程间通信"
 category: "Linux"
 tags: [linux]
@@ -25,6 +25,9 @@ AF_UNIX 指的就是 Unix Domain socket，那么它与通常网络编程里面�
 
 - Unix Domain socket 是同一台机器上不同进程间的通信机制。
 - IP(TCP/IP) socket 是网络上不同主机之间进程的通讯机制。
+
+
+socketpair() 只支持 AF_LOCAL 或者 AF_UNIX，不支持 TCP/IP，也就是 AF_INET， 所以用 socketpair() 的话无法进行跨主机的进程间通信。
 
 先看一个简单的示例：
 
