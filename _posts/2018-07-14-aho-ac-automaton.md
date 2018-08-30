@@ -8,6 +8,7 @@ tags: [algorithm, aho, ac, automaton]
 
 *  目录
 {:toc}
+***
 
 AHO 算法，或者叫 AC 自动机、又或者叫 Aho–Corasick string matching algorithm，是一个高效的多模式匹配算法，它的特点是可以同时匹配多个模式串。
 
