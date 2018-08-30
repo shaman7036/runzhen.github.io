@@ -183,9 +183,9 @@ ngx_pass_open_channel(ngx_cycle_t *cycle, ngx_channel_t *ch)
 }
 ```
 
-存活的子进程调用`ngx_channel_handler()`函数，读取消息并解析成`ngx_channel_t`，并根据command做相应的处理.
+已存在的 worker 进程调用`ngx_channel_handler()`函数，读取消息并解析成`ngx_channel_t`，根据command做相应的处理.
 
-存活的子进程收到信息更新自己的`ngx_processes`进程表，子进程就得到新创建的子进程的信息，子进程间就可以通信。
+worker 进程收到信息更新自己的`ngx_processes`进程表，子进程就得到新创建的子进程的信息，worker 之间就可以通信了。
 
 ```
 ngx_channel_handler(ngx_event_t *ev)
@@ -204,7 +204,10 @@ ngx_channel_handler(ngx_event_t *ev)
 ```
 
 
-最后总结一下 nginx 启动 worker 进程的步骤：先创建子进程，调用 socketpair() 生成文件描述符 channel[]，并设置好一旦这个 FD 上有读/写事件，将调用哪个处理函数，然后将新 worker 信息通知给其他 worker，其他 worker 因为在创建时也设置了处理函数，于是会用 `ngx_channel_handler()` 处理。
+
+最后，总结一下 nginx 启动 worker 进程的步骤：
+
+先创建子进程，调用 socketpair() 生成文件描述符 channel[]，并设置好一旦这个 FD 上有读/写事件，将调用哪个处理函数，然后将新 worker 信息通知给其他 worker，其他 worker 因为在创建时也设置了处理函数，于是会用 `ngx_channel_handler()` 处理。
 
 
 
