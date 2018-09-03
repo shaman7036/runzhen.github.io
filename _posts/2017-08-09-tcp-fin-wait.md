@@ -48,7 +48,7 @@ tcp        0      1 192.168.122.183:1234    192.168.122.167:60482   LAST_ACK    
 
 在客户端抓包 [tcp-fin.pcap](/image/2017/tcp-fin.pcap)，可以看到 TCP 发出 FIN，但没有接受到 ACK 之间，一直在试图重传 FIN 报文，间隔的时间 200ms，400ms 递增。
 
-![](/image/2017/tcpclose2.png){:height="350" width="200"}
+![](/image/2017/tcpclose2.png){:height="200" width="500"}
 
 
 原文中还提到了 2 个系统参数 ：
