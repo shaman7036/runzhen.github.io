@@ -36,10 +36,13 @@ tcp        0      0 192.168.122.167:60482   192.168.122.183:1234    ESTABLISHED 
 ```
 # netstat -anp | grep tcp
 tcp        0      1 192.168.122.167:60482   192.168.122.183:1234    FIN_WAIT1   -
-tcp6       0      0 :::22                   :::*                    LISTEN      1153/sshd
 ```
 
-再来看一下此时服务端的状态，根据上面的图，此时 TCP 应该处于 LAST-ACK 状态：
+再来看一下此时服务端的状态：
+
+根据上面的流程图，此时 TCP 应该处于 `CLOSE-WAIT` 状态，等待上层应用告诉 TCP "我没有数据发了，请关闭连接"。在我们这个例子中，因为应用层本身没有数据要发送，因此**服务端 FIN 报文和 ACK 一起发送**，见 pcap 截图。
+
+所以 CLOSE WAIT 状态被很快跳过，直接进入 LAST-ACK 状态：
 ```
 $ sudo netstat -anp | grep tcp
 
@@ -48,7 +51,7 @@ tcp        0      1 192.168.122.183:1234    192.168.122.167:60482   LAST_ACK    
 
 在客户端抓包 [tcp-fin.pcap](/image/2017/tcp-fin.pcap)，可以看到 TCP 发出 FIN，但没有接受到 ACK 之间，一直在试图重传 FIN 报文，间隔的时间 200ms，400ms 递增。
 
-![](/image/2017/tcpclose2.png){:height="200" width="500"}
+![](/image/2017/tcpclose2.png){:height="200" width="600"}
 
 
 原文中还提到了 2 个系统参数 ：
