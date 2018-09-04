@@ -68,7 +68,12 @@ Linux TCP协议栈 FIN 报文重传间隔 由 `tcp_orphan_retries` 控制。
 
 > The length of time an orphaned (no longer referenced by any application) connection will remain in the FIN_WAIT_2 state before it is aborted at the local end. While a perfectly valid “receive only” state for an un-orphaned connection, an orphaned connection in FIN_WAIT_2 state could otherwise wait forever for the remote to close its end of the connection.
 
-## 网络奇葩问题知多少
+
+## 参考资料
+
+- [https://huoding.com/2014/11/06/383](https://huoding.com/2014/11/06/383)
+- [Nginx 的 reset_timedout_connection 选项和 FIN_WAIT1](http://nginx.org/en/docs/http/ngx_http_core_module.html#reset_timedout_connection)
+- http://valerieaurora.org/tcpip.html
 
 测测看自己对 TCP [了解多少](http://valerieaurora.org/tcpip.html) ？
 
@@ -115,13 +120,6 @@ Linux TCP协议栈 FIN 报文重传间隔 由 `tcp_orphan_retries` 控制。
 21）TCP 有一个会添加 MD5 校验和到包中的扩展。该扩展什么时候起作用？
 
 22）IPv4 和 IPv6 的校验和算法有什么区别？
-
-
-## 参考资料
-
-- [https://huoding.com/2014/11/06/383](https://huoding.com/2014/11/06/383)
-- [Nginx 的 reset_timedout_connection 选项和 FIN_WAIT1](http://nginx.org/en/docs/http/ngx_http_core_module.html#reset_timedout_connection)
-- http://valerieaurora.org/tcpip.html
 
 
 
