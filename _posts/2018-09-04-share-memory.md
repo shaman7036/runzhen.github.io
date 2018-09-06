@@ -28,15 +28,13 @@ mmap 语义上比 shmget 更通用，因为它最一般的做法，是将一个�
 
 
 mmap() 的函数原型如下，具体参数含义在最后的参考资料中给出。
-```
-void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
 
-```
+`void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);`
 
 
 ## nginx 中的实现
 
-nginx 中是怎么实现的呢？ 我们看一下源码 `os/unix/ngx_shmem.c`。
+nginx 中是怎么实现的呢？ 我们看一下源码 `src/os/unix/ngx_shmem.c`。
 
 一目了然，简单粗暴有木有！ 分三种情况
 
@@ -90,11 +88,18 @@ ngx_shm_alloc(ngx_shm_t *shm)
     return (shm->addr == (void *) -1) ? NGX_ERROR : NGX_OK;
 }
 ```
+ 
+> 上面代码中的宏定义（比如 NGX_HAVE_MAP_ANON ）是怎么来的呢？编译 nginx 源码之前的一步是运行 configure 文件，它会调用 auto/unix 脚本 ，该脚本会写一端测试程序来判断相应的系统调用是否支持，如果支持，则在自动生成的 objs/ngx_auto_config.h 文件中定义对应的宏。 
+
+## 一个简单的示例
 
 
-## 动手实验
+
 
 ## 参考资料
+
+- [https://rocfang.gitbooks.io/dev-notes/content/nginxzhong_de_jin_cheng_jian_tong_xin.html](https://rocfang.gitbooks.io/dev-notes/content/nginxzhong_de_jin_cheng_jian_tong_xin.html)
+
 
 ```
 void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
