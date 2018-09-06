@@ -93,9 +93,54 @@ ngx_shm_alloc(ngx_shm_t *shm)
 
 ## 一个简单的示例
 
+既然是“共享内存”，那么我们就来设计一个 “多进程访问临界区” 的示例吧。
 
+像下面这样的代码，如果是单个进程的话，运行结束后 count 的值必定是 10000；但是如果有 Race Condition 的话，那么 count 的结果就随机了。
+```
+    for (int i = 0; i < 10000; i++) {
+        count += 1;
+    }
+```
 
+因此，可以写出这样的一个测试程序（为了避免粘贴大量的代码，在这里仅概括一下，完整的代码可以在[这里下载](https://gist.github.com/runzhen/8f8705148be3e97771946ed32d04e0a5)）
 
+1. SET 程序： 分配一个共享内存，然后执行上面的 for 循环
+2. GET 程序： 打开相同的共享内存，获取其中内容
+3. run.sh 脚本： 方面我们运行 SET 和 GET
+
+### 单个进程
+一开始，我们在 run.sh 脚本中运行一个 SET 和一个 GET， 可以看到每次的结果都是固定的 10000
+
+```
+$ ./run.sh
+./GET pid 8130: Read from shared memory: 10000
+
+$ ./run.sh
+./GET pid 8146: Read from shared memory: 10000
+```
+
+### 多个进程竞争
+然后，修改 run.sh，将 `./${SET} &` 复制多次，这样就会开启多个 SET 程序。看一下运行结果：
+
+```
+$ ./run.sh
+./GET pid 8221: Read from shared memory: 63527
+
+$ ./run.sh
+./GET pid 8243: Read from shared memory: 60902
+
+$ ./run.sh
+./GET pid 8265: Read from shared memory: 68870
+
+$ ./run.sh
+./GET pid 8287: Read from shared memory: 70000
+
+$ ./run.sh
+./GET pid 8309: Read from shared memory: 56778
+```
+
+可以看到每次的结果都不一样。 那么怎么解决竞态条件呢？ 当然是用锁了，这一部分下次再来写！
+ 
 ## 参考资料
 
 - [https://rocfang.gitbooks.io/dev-notes/content/nginxzhong_de_jin_cheng_jian_tong_xin.html](https://rocfang.gitbooks.io/dev-notes/content/nginxzhong_de_jin_cheng_jian_tong_xin.html)
