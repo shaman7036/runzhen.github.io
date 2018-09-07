@@ -59,8 +59,6 @@ ngx_shm_alloc(ngx_shm_t *shm)
 ngx_int_t
 ngx_shm_alloc(ngx_shm_t *shm)
 {
-    ngx_fd_t  fd;
-
     fd = open("/dev/zero", O_RDWR);
 
     shm->addr = (u_char *) mmap(NULL, shm->size, PROT_READ|PROT_WRITE,
@@ -74,15 +72,11 @@ ngx_shm_alloc(ngx_shm_t *shm)
 ngx_int_t
 ngx_shm_alloc(ngx_shm_t *shm)
 {
-    int  id;
-
     id = shmget(IPC_PRIVATE, shm->size, (SHM_R|SHM_W|IPC_CREAT));
 
     shm->addr = shmat(id, NULL, 0);
 
     if (shmctl(id, IPC_RMID, NULL) == -1) {
-        ngx_log_error(NGX_LOG_ALERT, shm->log, ngx_errno,
-                      "shmctl(IPC_RMID) failed");
     }
 
     return (shm->addr == (void *) -1) ? NGX_ERROR : NGX_OK;
@@ -102,7 +96,7 @@ ngx_shm_alloc(ngx_shm_t *shm)
     }
 ```
 
-因此，可以写出这样的一个测试程序（为了避免粘贴大量的代码，在这里仅概括一下，完整的代码可以在[这里下载](https://gist.github.com/runzhen/8f8705148be3e97771946ed32d04e0a5)）
+因此，可以写出这样的一个测试程序（避免粘贴大量的代码，这里仅概括一下，完整的代码可以在[这里下载](https://gist.github.com/runzhen/8f8705148be3e97771946ed32d04e0a5)）
 
 1. SET 程序： 分配一个共享内存，然后执行上面的 for 循环
 2. GET 程序： 打开相同的共享内存，获取其中内容
@@ -139,7 +133,10 @@ $ ./run.sh
 ./GET pid 8309: Read from shared memory: 56778
 ```
 
-可以看到每次的结果都不一样。 那么怎么解决竞态条件呢？ 当然是用锁了，这一部分下次再来写！
+可以看到每次的结果都不一样。 那么怎么解决竞态条件呢？ 当然是用锁了，互斥锁、信号量、文件锁、读写锁等等。
+
+nginx里有两种实现方式，一个是共享内存地址作为信号量lock，一个是文件锁，如果操作系统支持原子操作，首先考虑使用共享内存信号量，因为信号量比文件锁耗时少。
+
  
 ## 参考资料
 
