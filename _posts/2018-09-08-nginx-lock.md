@@ -10,7 +10,7 @@ tags: [nginx]
 {:toc}
 ***
 
-在上一篇博客 [Linux 共享内存](https://blog.nlogn.cn/share-memory/)的示例中，我们看到每次多个进程同时对共享内存中的 count 加一，导致每次运行结果都不一样，那么解决的方法就是对临界区加锁了，所以本文就来研究一下 nginx 中的几种加锁方式。
+在上一篇博客 [Linux 共享内存以及 nginx 中的实现](https://blog.nlogn.cn/share-memory/)的示例中，我们看到每次多个进程同时对共享内存中的 count 加一，导致每次运行结果都不一样，那么解决的方法就是对临界区加锁了，所以本文就来研究一下 nginx 中的几种加锁方式。
 
 ## 文件锁
 
@@ -70,7 +70,7 @@ void mtx_file_unlock(struct fdmutex *m)
 - Makefile : 开启多个 set 程序，因此多个 set 会同时对共享内存的 count 操作。
 - get : 等多个 set 运行完成后，运行 get 获取共享内存中的值。
 
-在上一篇博客 [Linux 共享内存](https://blog.nlogn.cn/share-memory/) 中我们已经看到，不加锁的情况下，每次的结果都不同；现在我们对 for 循环的前后都加上文件锁，再来看看结果：
+在上一篇博客 [Linux 共享内存以及 nginx 中的实现](https://blog.nlogn.cn/share-memory/) 中我们已经看到，不加锁的情况下，每次的结果都不同；现在我们对 for 循环的前后都加上文件锁，再来看看结果：
 
 先用 make 命令生成可执行文件，然后 `make run`, 开启 6 个 set 进程同时运行
 
