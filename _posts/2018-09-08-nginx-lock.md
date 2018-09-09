@@ -72,36 +72,90 @@ void mtx_file_unlock(struct fdmutex *m)
 
 在上一篇博客 [Linux 共享内存以及 nginx 中的实现](https://blog.nlogn.cn/share-memory/) 中我们已经看到，不加锁的情况下，每次的结果都不同；现在我们对 for 循环的前后都加上文件锁，再来看看结果：
 
-先用 make 命令生成可执行文件，然后 `make run`, 开启 6 个 set 进程同时运行
+先用 make 命令生成可执行文件，
 
 ```
 $ make
 gcc -o set set.c -lrt -lpthread
 gcc -o get get.c -lrt -lpthread
 
+```
 
+然后执行 `make run`, 开启 6 个 set 进程同时运行，再 sleep 5 秒钟，这是为了让 set 有充分的时间去执行完毕，最后再用 get 进程去获取共享内存里面的 count 值。
+
+```
 $ make run
-./set &
-./set &
-[+] PID 16893 start
-./set &
-...
-...
+[+] PID 21314 start
+[+] PID 21316 start
+[+] PID 21318 start
+[+] PID 21320 start
+[+] PID 21322 start
+sleep 5
+[+] PID 21324 start
+./GET pid 21326: Read from shared memory: 60000
 ```
-
-最后，调用 get 程序获取共享内存中的 count 值，
-
-```
-$ ./get
-./GET pid 16904: Read from shared memory: 60000
-``` 
 
 多运行几次，可以发现每次的结果都是 60000，证明文件锁对临界区起到了保护作用。
+
+> 如果看到运行的结果不是 60000，可以修改 Makefile 把 sleep 的时间增大，确保所有的 set 都执行完毕再调用 get。
+
+> 另一个方法是修改 Makefile 的 run 部分，不自动运行 get 程序，只执行多个 set；然后用 ps aux | grep set 查看系统中有多少个 set 还在运行，确保没有之后再手动执行  ./get 
 
 
 ## 原子锁
 
-文件锁的操作效率不及原子锁，原子锁是利用 CPU 提供的原子操作功能来实现锁，可见效率上更胜一筹。
+文件锁的操作效率不及原子锁，原子锁是利用 CPU 提供的原子操作功能来实现锁，比如 `Compare-and-Swap` 指令 `cmpxchgl`， 可见效率上更胜一筹。
+
+不过，CPU 只提供了汇编级别的操作指令，我们的 C 语言程序想要用原子操作，要么自己实现，要么调用库函数。在 nginx 的实现中，针对不同的平台、不同的函数库都有相应的处理。
+
+在本文的例子中，为了简单起见，直接使用了 nginx 的 `ngx_atomic_cmp_set()` 在 x86 架构上的代码，位于 `/src/os/unix/ngx_gcc_atomic_x86.h`。
+
+完整的代码请在这里下载。
+
+有了自己的 `Compare-and-Swap` 函数后，就可以实现 lock 和 unlock ，下面是 **加锁**函数：
+
+```
+void atomic_lock(struct shared_area *m, uint64_t pid)
+{
+    for (;;) {
+        if (m->lock == 0 && atomic_cmp_set(&m->lock, 0, pid)) {
+            return;
+        }
+    }
+}
+```
+
+可以看出，上面的加锁代码直接使用了一个 for 循环，当无法获取锁时，无限等待，所以这是一个 `自旋锁`。为了避免无限等待，nginx 中会用信号量等技巧作一些避免，具体请参考 `src/core/ngx_shmtx.c` 。
+
+下面是**解锁**代码
+
+```
+void atomic_unlock(struct shared_area *m, uint64_t pid)
+{
+    atomic_cmp_set(&m->lock, pid, 0);
+}
+```
+
+最后，我们的测试代码与文件锁的非常类似，只是把加锁解锁函数换成了原子锁实现而已，运行的结果也非常类似：
+```
+$ make run
+[+] SET PID 21641 start
+[+] SET PID 21643 start
+[+] SET PID 21645 start
+[+] SET PID 21647 start
+[+] SET PID 21649 start
+sleep 5
+[+] SET PID 21651 start
+./GET pid 21653: Read from shared memory: 60000
+``` 
 
 ## nginx 中的实现
+
+
+
+## 相关资料
+
+- [http://shibing.github.io/2017/06/22/nginx%E4%BA%92%E6%96%A5%E9%94%81%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%BD%BF%E7%94%A8/](http://shibing.github.io/2017/06/22/nginx%E4%BA%92%E6%96%A5%E9%94%81%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%BD%BF%E7%94%A8/)
+
+- [http://simohayha.iteye.com/blog/658012](http://simohayha.iteye.com/blog/658012)
 
