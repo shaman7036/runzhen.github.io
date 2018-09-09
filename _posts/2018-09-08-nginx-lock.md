@@ -64,7 +64,7 @@ void mtx_file_unlock(struct fdmutex *m)
 
 遇到临界区，只要在需要进行保护的代码前后加上上面的 lock() 和 unlock() 函数就可以了。
 
-下面来运行一下完整的代码，源代码包含三个文件 Makefile，set, get
+下面来运行一下[完整的代码](/code/locks.tar.gz)，源代码包含三个文件 Makefile，set, get
 
 - set : 对共享内存中的 count 执行 10000 次加一。
 - Makefile : 开启多个 set 程序，因此多个 set 会同时对共享内存的 count 操作。
@@ -112,7 +112,7 @@ sleep 5
 
 ### 自旋锁的简单实现
 
-完整的代码请在这里下载。
+完整的代码请在[这里下载](/code/locks.tar.gz)。
 
 有了自己的 `Compare-and-Swap` 函数后，就可以实现 lock 和 unlock。另外有一点很重要：因为是对多个进程进行互斥，所以`锁的结构必须保存在共享内存区域`，这一点不难理解，如果放在进程的私有空间，那么各个进程各玩各的，起不到互斥的作用。
 
