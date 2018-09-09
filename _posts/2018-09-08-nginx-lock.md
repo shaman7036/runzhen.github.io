@@ -99,7 +99,7 @@ sleep 5
 
 > 如果看到运行的结果不是 60000，可以修改 Makefile 把 sleep 的时间增大，确保所有的 set 都执行完毕再调用 get。
 
-> 另一个方法是修改 Makefile 的 run 部分，不自动运行 get 程序，只执行多个 set；然后用 ps aux | grep set 查看系统中有多少个 set 还在运行，确保没有之后再手动执行  ./get 
+> 另一个方法是修改 Makefile 的 run 部分，不自动运行 get 程序，只执行多个 set；然后用 `ps aux | grep set` 查看系统中有多少个 set 还在运行，确保没有之后再手动执行  ./get 
 
 
 ## 原子锁
@@ -110,9 +110,13 @@ sleep 5
 
 在本文的例子中，为了简单起见，直接使用了 nginx 的 `ngx_atomic_cmp_set()` 在 x86 架构上的代码，位于 `/src/os/unix/ngx_gcc_atomic_x86.h`。
 
+### 自旋锁的简单实现
+
 完整的代码请在这里下载。
 
-有了自己的 `Compare-and-Swap` 函数后，就可以实现 lock 和 unlock ，下面是 **加锁**函数：
+有了自己的 `Compare-and-Swap` 函数后，就可以实现 lock 和 unlock。另外有一点很重要：因为是对多个进程进行互斥，所以`锁的结构必须保存在共享内存区域`，这一点不难理解，如果放在进程的私有空间，那么各个进程各玩各的，起不到互斥的作用。
+
+下面是 **加锁**函数，
 
 ```
 void atomic_lock(struct shared_area *m, uint64_t pid)
@@ -149,13 +153,21 @@ sleep 5
 ./GET pid 21653: Read from shared memory: 60000
 ``` 
 
+> 如果结果不是 60000，修改 Makefile 把 sleep 时间增大，确保所有 set 执行完毕再调用 get。
+
 ## nginx 中的实现
 
+先来总结一下 nginx 中的锁，主要是两大类：
 
+1. 文件锁：根据传给 fcntl() 的参数，又可以加锁时阻塞和非阻塞
+    - F_SETLKW，表示获取不到文件锁时，阻塞直到可以获取
+    - F_SETLK, 获取不到锁时会直接返回，不会阻塞进程。因为会直接返回，所以需要在外部在包装一个 `ngx_shmtx_trylock()` 函数。
+2. 原子锁：用库函数或者nginx实现，取决于 configure 脚本生成的宏定义。
+    - 也分为阻塞的和非阻塞的，但是这与锁本身的实现没有关系，而是靠额外的信号量来实现阻塞。
+    
 
 ## 相关资料
 
-- [http://shibing.github.io/2017/06/22/nginx%E4%BA%92%E6%96%A5%E9%94%81%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%BD%BF%E7%94%A8/](http://shibing.github.io/2017/06/22/nginx%E4%BA%92%E6%96%A5%E9%94%81%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%BD%BF%E7%94%A8/)
-
+- [nginx互斥锁](http://shibing.github.io/2017/06/22/nginx%E4%BA%92%E6%96%A5%E9%94%81%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%BD%BF%E7%94%A8/)
 - [http://simohayha.iteye.com/blog/658012](http://simohayha.iteye.com/blog/658012)
 
