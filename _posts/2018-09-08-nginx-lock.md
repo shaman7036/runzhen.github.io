@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: yes
-title: "nginx 文件锁、原子锁的实现"
+title: "nginx 文件锁、自旋锁的实现"
 category: "Linux"
 tags: [nginx]
 ---
@@ -102,7 +102,7 @@ sleep 5
 > 另一个方法是修改 Makefile 的 run 部分，不自动运行 get 程序，只执行多个 set；然后用 `ps aux | grep set` 查看系统中有多少个 set 还在运行，确保没有之后再手动执行  ./get 
 
 
-## 原子锁
+## 基于原子操作的锁
 
 文件锁的操作效率不及原子锁，原子锁是利用 CPU 提供的原子操作功能来实现锁，比如 `Compare-and-Swap` 指令 `cmpxchgl`， 可见效率上更胜一筹。
 
@@ -164,7 +164,116 @@ sleep 5
     - F_SETLK, 获取不到锁时会直接返回，不会阻塞进程。因为会直接返回，所以需要在外部在包装一个 `ngx_shmtx_trylock()` 函数。
 2. 原子锁：用库函数或者nginx实现，取决于 configure 脚本生成的宏定义。
     - 也分为阻塞的和非阻塞的，但是这与锁本身的实现没有关系，而是靠额外的信号量来实现阻塞。
+
+
+关于源代码的分析，网上有很多资料（比如参考资料1），下面是我的整理，
+
+```
+ngx_shmtx_create(ngx_shmtx_t *mtx, ngx_shmtx_sh_t *addr, u_char *name)
+{
+    mtx->lock = &addr->lock;
+    // 不支持信号量时，spin 表示锁的自旋次数，为0或负数表示不进行自旋，直接让出cpu，
+    // 支持信号量时，-1 表示不要使用信号量将进程置于睡眠状态
+    if (mtx->spin == (ngx_uint_t) -1) {
+        return NGX_OK;
+    }
+    // 默认自旋次数
+    mtx->spin = 2048;
     
+#if (NGX_HAVE_POSIX_SEM)
+    mtx->wait = &addr->wait;
+    //初始化信号量，第二个参数1表示，信号量使用在多进程环境中，第三个参数0表示信号量的初始值
+    //当信号量的值小于等于0时，尝试等待信号量会阻塞
+    //当信号量大于0时，尝试等待信号量会成功，并把信号量的值减一。
+    if (sem_init(&mtx->sem, 1, 0) == -1) {
+    } else {
+        mtx->semaphore = 1;
+    }
+#endif
+    return NGX_OK;
+}
+```
+
+### 阻塞式的锁
+
+这是唯一理解起来麻烦一点的地方。总的来说，我们的目标是`原子操作的互斥锁，阻塞式的`，那么阻塞怎么实现呢？
+
+如果系统不支持信号量，那么获取不到锁的时候，我们让他自旋一会儿，这与我自己的实现是一样的，只不过我用了无限 for 循环，粗暴。而 nginx 的实现则优雅一点，用 mtx->spin 的值指定重试的最大次数。
+
+如果系统支持信号量，那么就不用 spin 自旋了，从`ngx_shmtx_create()` 函数就能看出来，直接用系统的信号量实现阻塞。
+
+同一时间，二者选其一就行了。 不过信号量的效率没有自旋好，所以一般不使用。例如 `ngx_accept_mutex` 就直接把 spin 设置为 -1 了。
+
+```
+void
+ngx_shmtx_lock(ngx_shmtx_t *mtx)
+{
+    for ( ;; ) {
+        //注意：由于在多进程环境下执行，*mtx->lock == 0 为真时，并不能确保后面的原子操作执行成功
+        if (*mtx->lock == 0 && ngx_atomic_cmp_set(mtx->lock, 0, ngx_pid)) {
+            return;
+        }
+        // 获取锁失败了，这时候判断cpu的数目，如果数目大于1，则先自旋一段时间，然后再让出cpu
+        // 如果cpu数目为1，则没必要进行自旋了，应该直接让出cpu给其他进程执行。
+        if (ngx_ncpu > 1) {
+            for (n = 1; n < mtx->spin; n <<= 1) {
+                for (i = 0; i < n; i++) {
+                    // ngx_cpu_pause函数并不是真的将程序暂停，
+                       而是为了提升循环等待时的性能，并且可以降低系统功耗。
+                    // 实现它时往往是一个指令： `__asm__`("pause")
+                    ngx_cpu_pause();
+                }
+                
+                // 再次尝试获取锁
+                if (*mtx->lock == 0
+                    && ngx_atomic_cmp_set(mtx->lock, 0, ngx_pid))
+                {
+                    return;
+                }
+            }
+        }
+        // 支持信号量
+#if (NGX_HAVE_POSIX_SEM)
+        // 上面自旋次数已经达到，依然没有获取锁，将进程在信号量上挂起，等待其他进程释放锁后再唤醒。
+        if (mtx->semaphore) {         
+            // 当前在该信号量上等待的进程数目加一
+            (void) ngx_atomic_fetch_add(mtx->wait, 1);
+            // 尝试获取一次锁，如果获取成功，将等待的进程数目减一，然后返回
+            if (*mtx->lock == 0 && ngx_atomic_cmp_set(mtx->lock, 0, ngx_pid)) {
+                (void) ngx_atomic_fetch_add(mtx->wait, -1);
+                return;
+            }
+            //  在信号量上进行等待
+            while (sem_wait(&mtx->sem) == -1) {
+                ngx_err_t  err;
+                err = ngx_errno;
+                if (err != NGX_EINTR) {
+                    break;
+                }
+            }
+
+            // 执行到此，肯定是其他进程释放锁了，
+            所以继续回到循环的开始，尝试再次获取锁
+            continue;
+        }
+#endif
+        // 在没有获取到锁，且不使用信号量时，会执行到这里.
+           通过 sched_yield 函数让调度器暂时将进程切出，让其他进程执行。
+        // 在其它进程执行后有可能释放锁，那么下次调度到本进程时，则有可能获取成功。
+        ngx_sched_yield();
+    }
+}
+```
+
+### 非阻塞式的锁
+
+非阻塞的锁就非常简单了
+```
+ngx_shmtx_trylock(ngx_shmtx_t *mtx)
+{
+    return (*mtx->lock == 0 && ngx_atomic_cmp_set(mtx->lock, 0, ngx_pid));
+}
+```
 
 ## 相关资料
 
