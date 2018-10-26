@@ -78,6 +78,7 @@ libpcap 使用的是一种称为设备层的包接口（packet interface on devi
 
 在我的测试中，两者差别是很明显的。
 
+所以，**当你的系统下载速度已经达到 50MB/s，你觉得不够，应该至少 100MB/s，这个时候开启 tcpdump 企图抓包分析原因是错误的，因为 tcpdump 本身会影响你的网络性能。**
 
 再次回到上面的 tcpdump 架构图，可以看出在内核层使用的是 `PF_PACKET`，而现在 linux 已经自带了更加先进的 `PF_RING` 专门针对大流量的场景。
 
@@ -89,9 +90,9 @@ libpcap 使用的是一种称为设备层的包接口（packet interface on devi
 iptables 依赖 netfilter 模块，后者工作在 Linux 网络协议栈中；
 
 
-- iptables 的入栈的策略不会影响到 tcpdump 抓取；
-- iptables 的出栈策略会影响数据包发送到网络驱动层面，因此，出栈策略会影响到 tcpdump 的抓取
+iptables 的入栈的策略不会影响到 tcpdump 抓取；而 iptables 的出栈策略会影响数据包发送到网络驱动层面，因此，出栈策略会影响到 tcpdump 的抓取。
 
+总结下来就是：
 
 - tcpdump 可以抓取到被 iptables 在 INPUT 链上 DROP 掉的数据包；
 - tcpdump 不能抓取到被 iptables 在 OUTPUT 链上 DROP 掉的数据包
