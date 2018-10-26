@@ -32,7 +32,7 @@ tags: [linux]
 
 
 
-## 实际导致问题的原因
+# 实际导致问题的原因
 
 因为 CVE-2018-5390 和 CVE-2018-5391，黑客可以用带有随机偏移量的 IP 分片引发 DoS 攻击（SegmentSmack and FragmentSmack，IP fragments and TCP segments with random offsets may cause a remote denial of service )
 
@@ -41,7 +41,7 @@ RedHat 给无法立刻升级内核的用户的临时解决方案是，减小 `ne
 因为值改动的比较大，所以一些潜在的问题就暴露了出来。
 
 
-## 重新认识 tcpdump 
+# 重新认识 tcpdump 
 
 tcpdump 直接从网络驱动层面抓取输入的数据，不经过任何 Linux 网络协议栈
 
@@ -56,7 +56,7 @@ tcpdump 可以抓取到被 iptables 在 INPUT 链上 DROP 掉的数据包；tcpd
 
 
 
-## 参考资料
+# 参考资料
 - [https://access.redhat.com/articles/3553061](https://access.redhat.com/articles/3553061)
 
 
