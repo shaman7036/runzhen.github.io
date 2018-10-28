@@ -14,7 +14,7 @@ tags: [linux]
 
 问题的背景是这样的：
 
-> 一个应用程序监听某端口的 UDP 包，发送者发送的 UDP 包比较大，有 65535 个字节。显然，发送者的 UDP 包在经过 IP 层时，会被拆分层多个 1460 字节长度的 IP 分片，经过网络传输之后到达接收方，接收方的网卡收到包后，在内核协议栈的 IP 层又将分片重新组合，生成打的 UDP 包给应用程序。
+> 一个应用程序监听某端口的 UDP 包，发送者发送的 UDP 包比较大，有 65535 个字节。显然，发送者的 UDP 包在经过 IP 层时，会被拆分层多个 1460 字节长度的 IP 分片，经过网络传输之后到达接收方，接收方的网卡收到包后，在内核协议栈的 IP 层又将分片重新组合，生成大的 UDP 包给应用程序。
 
 
 正常情况下，应用程序能准确无误的收到大 UDP 包，偶尔系统网络流量十分巨大的时候，会丢个别 UDP 包 ——这都在允许范围内。
@@ -37,9 +37,9 @@ tags: [linux]
 
 # 实际导致问题的原因
 
-最终查明的原因是这台 linux 系统上有两个参数被修改了，当 IP 分片数量过大时，所有的分片都被丢弃了。
+最终查明的原因是这台 linux 系统上有两个参数被修改了，当 IP 分片数量过大时，内核中分配给重组的缓冲区已满，导致之后的分片都被丢弃了。
 
-因为 CVE-2018-5390 和 CVE-2018-5391，黑客可以用带有随机偏移量的 IP 分片引发 DoS 攻击.（详细见参考资料 1）
+因为 CVE-2018-5390 和 CVE-2018-5391，黑客可以用带有随机偏移量的 IP 分片引发 DoS 攻击（详细见参考资料 1）
 
 RedHat 给无法立刻升级内核的用户的临时解决方案是，减小 `net.ipv4.ipfrag_high_thresh` 的值，从 4MB 减小到 256 KB；`net.ipv4.ipfrag_low_thresh`, 从 3MB 到 192 KB。
 
@@ -47,6 +47,16 @@ RedHat 给无法立刻升级内核的用户的临时解决方案是，减小 `ne
 
 可以用 `netstat -s` 命令输出一些统计信息，其中 IP Fragment 相关字段会有明显的增长。
 
+本文的标题《tcpdump 抓到的包可信吗？》 似乎有一些标题党，其实在这里我想表达的意思是：能否根据 tcpdump 抓到的 pcap 文件判断一个数据包是否被接收方收到，或者是否被应用程序收到？ 之前我想当然的会回答 “是”，现在看来答案是 “否”。
+
+其实平时在使用 tcpdump 时，命令行的输出已经提示了我们有多少包被 kernel 丢弃了：
+```
+# tcpdump -ieth0 -s0 -wt.pcap
+tcpdump: listening on wlp3s0, link-type EN10MB (Ethernet), capture size 262144 bytes
+^C2 packets captured
+4 packets received by filter
+0 packets dropped by kernel
+```
 
 # 重新认识 tcpdump 
 
@@ -80,7 +90,7 @@ libpcap 使用的是一种称为设备层的包接口（packet interface on devi
 
 所以，**当你的系统下载速度已经达到 50MB/s，你觉得不够，应该至少 100MB/s，这个时候开启 tcpdump 企图抓包分析原因是错误的，因为 tcpdump 本身会影响你的网络性能。**
 
-再次回到上面的 tcpdump 架构图，可以看出在内核层使用的是 `PF_PACKET`，而现在 linux 已经自带了更加先进的 `PF_RING` 专门针对大流量的场景。
+再次回到上面的 tcpdump 架构图，可以看出在内核层使用的是 `PF_PACKET`，而现在 linux 已经自带了更加先进的 `PF_RING` 专门针对大流量的场景。有关 PF_RING 下次写一篇博客介绍一下。
 
 
 ## tcpdump 与 iptables 
