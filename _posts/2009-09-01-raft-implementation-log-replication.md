@@ -12,7 +12,7 @@ tags: [raft]
 ![状态转换图](/image/2018/raft6.png)
 
 
-## 日志的复制
+# 日志的复制
 
 一旦选举成功，所有的 Client 请求最终都会交给 Leader 处理。
 
@@ -26,6 +26,73 @@ tags: [raft]
 1. firstLogIndex/lastLogIndex标识当前日志序列的起始位置
 2. commitIndex 表示当前已经提交的日志，也就是成功同步到集群中日志的最大值
 3. applyIndex是已经apply到状态机的日志索引，它的值必须小于等于commitIndex，因为只有已经提交的日志才可以apply到状态机
+
+
+先看看与日志复制相关的数据结构成员。
+
+```
+type Raft struct {
+	....
+    log         []LogEntry
+
+    commitIndex int 
+    lastApplied int 
+
+    nextIndex  []int 
+    matchIndex []int 
+    .....
+}
+```
+
+
+```
+type AppendEntriesRequest struct {
+    Term         int32
+    LeaderID     int
+    PrevLogIndex int
+    PrevLogTerm  int32
+    Entries      []LogEntry
+    LeaderCommit int
+}
+```
+
+```
+type AppendEntriesReply struct {
+    Term          int32
+    HeartBeat     bool
+    Success       bool
+    ConflictIndex int
+    ConflictTerm  int32
+}
+```
+
+
+对于每个follower，leader保持2个属性，一个是nextIndex即leader要发给该follower的下一个entry的index，另一个就是matchIndex即follower发给leader的确认index。
+
+一个leader在刚开始的时候会初始化：
+`
+nextIndex[x] = leader的log的最大index+1
+matchIndex[x] = 0
+`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## 参考资料
