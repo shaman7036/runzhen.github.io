@@ -31,7 +31,7 @@ type Raft struct {
 }
 ```
 
-先看看最后 nextIndex 和 matchIndex，这两个数组只有当这个 raft 是 Leader 的时候才有效，否则这两个数组的内容无效。
+nextIndex 和 matchIndex，这两个数组只有当这个 raft 是 Leader 的时候才有效，否则这两个数组的内容无效。
 
 对于 leader 来说，它要为集群中的每个 follower 保存2个属性，一个是 nextIndex，即 leader 要发给该 follower 的下一个 entry 的 index，另一个就是 matchIndex 即 follower 发给 leader 的确认index。
 
@@ -61,15 +61,29 @@ type AppendEntriesRequest struct {
 }
 ```
 
-Leader 准备 AppendEntries RPC 请求的参数，其中：
+`Leader` 准备 AppendEntries RPC 请求的参数，其中：
+
+1）prevLogIndex = nextIndex-1。
+
+2）prevLogTerm = 从 log 中得到上述 prevLogIndex 对应的 term。
+
+3）entries = leader 的 log 的 prevLogIndex+1 开始到 lastLog，此时是空的。
+
+4）leaderCommit = commitIndex
+
+
+`follower` 接收到 AppendEntriesRequest 请求之后，回复给 leader 一个 AppendEntriesReply 结构，定义如下：
+
 ```
-prevLogIndex = nextIndex-1
-prevLogTerm = 从 log 中得到上述 prevLogIndex 对应的 term
-entries = leader 的 log 的 prevLogIndex+1 开始到 lastLog，此时是空的
-leaderCommit = commitIndex
+type AppendEntriesReply struct {
+    Term          int32
+    Success       bool
+    ConflictIndex int
+    ConflictTerm  int32
+}
 ```
 
-follower 接收到 AppendEntriesRequest 请求之后，先做如下几项检查：
+在回复之前，先做如下几项检查：
 
 1）重置 HeartbeatTimeout
 
@@ -84,38 +98,17 @@ nextIndex = 上述lastIndex+1
 ```
 然后 leader **会重新发送新的 prevLogIndex、prevLogTerm、和 entries 数组**
 
-5）follower 检查 prevLogIndex 和 prevLogTerm 和对应index的log是否一致（目前一致了）
+5）follower 检查 prevLogIndex 和 prevLogTerm 和对应 index 的 log 是否一致（假设一致了）
 
 6）follower 于是开始将 entries 中的数据全部覆盖到本地对应的 index上，与 leader 保持一致。
 
 7）follower 将最后复制的 index 发给 leader，leader 用来更新 macthIndex[] 中对应这个 follower 的项。
 
-```
-type AppendEntriesReply struct {
-    Term          int32
-    Success       bool
-    ConflictIndex int
-    ConflictTerm  int32
-}
-```
 
 
+leader 一旦发现有些 entries 已经被过半的 follower 复制了，就将该 entry **“提交”**，将 commitIndex 提升至该 entry 的 index。（这里是按照 entry 的 index 先后顺序提交的），具体的实现可以通过 follower 发送过来 macthIndex 来判定是否过半了。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+一旦可以提交了，leader 就将该 entry 应用到状态机中，然后给客户端回复 OK。然后在下一次 heartBeat 心跳中，将 commitIndex 传给了所有的 follower，对应的 follower 就可以将 commitIndex 以及之前的 entry 应用到各自的状态机中了。
 
 
 
