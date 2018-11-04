@@ -1,16 +1,10 @@
 ---
 layout: post
 comments: true
-title: "Raft 算法的简单实现"
+title: "Raft 算法实现 2：日志的复制"
 category: "Distributed System"
 tags: [raft]
 ---
-
-在实现的时候发现这张状态转换图非常重要。整个 raft 的运行就是围绕着这张图发生一系列状态转换。
-因此，第一步实现一个状态机就成了关键。
-
-![状态转换图](/image/2018/raft6.png)
-
 
 # 日志的复制
 
@@ -21,28 +15,40 @@ tags: [raft]
 > 所以一旦一个节点成为 Leader 以后，那么它的 log[] 保存的这一组 LogEntry 就代表了整个集群中的最终一致的数据。用 raft 论文的话来说就是，节点是一个状态机，LogEntry 是指令集，任何一个节点，只要逐个执行这一串指令，最后状态机的状态都一样。
 
 
-![](/image/2018/raft2-1.jpg)
-
-1. firstLogIndex/lastLogIndex标识当前日志序列的起始位置
-2. commitIndex 表示当前已经提交的日志，也就是成功同步到集群中日志的最大值
-3. applyIndex是已经apply到状态机的日志索引，它的值必须小于等于commitIndex，因为只有已经提交的日志才可以apply到状态机
-
-
-先看看与日志复制相关的数据结构成员。
+先看看与日志复制相关的几个数据结构，首先是 raft 结构，其中相关的有以下几个变量：
 
 ```
 type Raft struct {
 	....
     log         []LogEntry
 
-    commitIndex int 
+    commitIndex int  // 所有机器
     lastApplied int 
 
-    nextIndex  []int 
+    nextIndex  []int // 只在 leader
     matchIndex []int 
     .....
 }
 ```
+
+先看看最后 nextIndex 和 matchIndex，这两个数组只有当这个 raft 是 Leader 的时候才有效，否则这两个数组的内容无效。
+
+对于 leader 来说，它要为集群中的每个 follower 保存2个属性，一个是 nextIndex，即leader要发给该 follower 的下一个 entry 的 index，另一个就是 matchIndex 即 follower 发给 leader 的确认index。
+
+一个leader在刚开始的时候会初始化：
+`
+for (all) {
+    nextIndex[x] = leader的log的最大index+1 
+    matchIndex[x] = 0
+}
+`
+
+
+![](/image/2018/raft2-1.jpg){:height="300" width="300"}
+
+1. firstLogIndex/lastLogIndex标识当前日志序列的起始位置
+2. commitIndex 表示当前已经提交的日志，也就是成功同步到集群中日志的最大值
+3. applyIndex是已经apply到状态机的日志索引，它的值必须小于等于commitIndex，因为只有已经提交的日志才可以apply到状态机
 
 
 ```
@@ -56,6 +62,14 @@ type AppendEntriesRequest struct {
 }
 ```
 
+Leader 准备 AppendEntries RPC 请求的参数，其中：
+```
+prevLogIndex = nextIndex-1
+prevLogTerm = 从log中得到上述prevLogIndex对应的term
+entries = leader的log的prevLogIndex+1 开始到 lastLog，此时是空的
+leaderCommit = commitIndex
+```
+
 ```
 type AppendEntriesReply struct {
     Term          int32
@@ -67,13 +81,7 @@ type AppendEntriesReply struct {
 ```
 
 
-对于每个follower，leader保持2个属性，一个是nextIndex即leader要发给该follower的下一个entry的index，另一个就是matchIndex即follower发给leader的确认index。
 
-一个leader在刚开始的时候会初始化：
-`
-nextIndex[x] = leader的log的最大index+1
-matchIndex[x] = 0
-`
 
 
 
