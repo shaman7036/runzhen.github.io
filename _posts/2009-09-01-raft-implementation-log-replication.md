@@ -33,22 +33,21 @@ type Raft struct {
 
 先看看最后 nextIndex 和 matchIndex，这两个数组只有当这个 raft 是 Leader 的时候才有效，否则这两个数组的内容无效。
 
-对于 leader 来说，它要为集群中的每个 follower 保存2个属性，一个是 nextIndex，即leader要发给该 follower 的下一个 entry 的 index，另一个就是 matchIndex 即 follower 发给 leader 的确认index。
+对于 leader 来说，它要为集群中的每个 follower 保存2个属性，一个是 nextIndex，即 leader 要发给该 follower 的下一个 entry 的 index，另一个就是 matchIndex 即 follower 发给 leader 的确认index。
 
 一个leader在刚开始的时候会初始化：
-`
+```
 for (all) {
-    nextIndex[x] = leader的log的最大index+1 
+    nextIndex[x] = leader 的 log 的最大 index+1 
     matchIndex[x] = 0
 }
-`
+```
 
+![](/image/2018/raft2-1.jpg){:height="200" width="400"}
 
-![](/image/2018/raft2-1.jpg){:height="300" width="300"}
-
-1. firstLogIndex/lastLogIndex标识当前日志序列的起始位置
-2. commitIndex 表示当前已经提交的日志，也就是成功同步到集群中日志的最大值
-3. applyIndex是已经apply到状态机的日志索引，它的值必须小于等于commitIndex，因为只有已经提交的日志才可以apply到状态机
+1. firstLogIndex/lastLogIndex 标识当前日志序列的起始位置。
+2. commitIndex 表示当前已经提交的日志，也就是成功同步到集群中日志的最大值。
+3. applyIndex 是已经 apply 到状态机的日志索引，它的值必须小于等于 commitIndex，因为只有已经提交的日志才可以 apply 到状态机。
 
 
 ```
@@ -65,15 +64,35 @@ type AppendEntriesRequest struct {
 Leader 准备 AppendEntries RPC 请求的参数，其中：
 ```
 prevLogIndex = nextIndex-1
-prevLogTerm = 从log中得到上述prevLogIndex对应的term
-entries = leader的log的prevLogIndex+1 开始到 lastLog，此时是空的
+prevLogTerm = 从 log 中得到上述 prevLogIndex 对应的 term
+entries = leader 的 log 的 prevLogIndex+1 开始到 lastLog，此时是空的
 leaderCommit = commitIndex
 ```
+
+follower 接收到 AppendEntriesRequest 请求之后，先做如下几项检查：
+
+1）重置 HeartbeatTimeout
+
+2）发来请求的 term 和自己当前的 term，若发来的小，则直接返回 false
+
+3）检查 prevLogIndex 和 prevLogTerm 和自己当前 log 对应的 index 的 log 是否一致。这里可能会有不一致，因为初始 prevLogIndex 和 prevLogTerm 是 leader 上的 lastLog，不一致的话返回 false，同时将自己的log的 lastIndex 传送给 leader。
+
+4）leader 接收到上述 false 之后，会记录该 follower 的上述 lastIndex
+```
+macthIndex = 上述lastIndex
+nextIndex = 上述lastIndex+1
+```
+然后 leader **会重新发送新的 prevLogIndex、prevLogTerm、和 entries 数组**
+
+5）follower 检查 prevLogIndex 和 prevLogTerm 和对应index的log是否一致（目前一致了）
+
+6）follower 于是开始将 entries 中的数据全部覆盖到本地对应的 index上，与 leader 保持一致。
+
+7）follower 将最后复制的 index 发给 leader，leader 用来更新 macthIndex[] 中对应这个 follower 的项。
 
 ```
 type AppendEntriesReply struct {
     Term          int32
-    HeartBeat     bool
     Success       bool
     ConflictIndex int
     ConflictTerm  int32
