@@ -10,7 +10,9 @@ tags: [nginx]
 {:toc}
 ***
 
-想要学习如何开发一个 nginx 模块，最快速简单的方法莫过于写一个 Hello World 模块，没错，还真有这么一个 nginx-hello-world-module，而且 nginx.org 官网还介绍了这个模块。
+# 编写模块
+
+想要学习如何开发一个 nginx 模块，最快速简单的方法莫过于写一个 Hello World 模块，没错，还真有这么一个 [nginx-hello-world-module](https://github.com/perusio/nginx-hello-world-module)，而且 nginx.org 官网还介绍了这个模块。
 
 首先，对于所有的 nginx 模块来说，都需要实现一个 `ngx_module_t` 结构体，如下所示，需要特别注意的是，如果去看 module 结构体的定义，它与下面的代码并不是一一对应的，这是因为 `NGX_MODULE_V1` 宏把其他变量都赋值了，帮我们屏蔽了一些细节。 总而言之，开发一个 nginx 模块，我们跟着这个套路走就行了。
 
@@ -89,8 +91,62 @@ static ngx_http_module_t ngx_http_hello_world_module_ctx = {
 
 ctx 的作用是当 nginx 启动，http 框架开始初始化时，把本模块的配置和 http{} server{} location{} 的配置整合使用的。hello world 的指令作为非常简单，仅仅只是返回一个字符串，不需要复杂的操作，因此全部为 NULL。 稍后我们会看一个复杂一点的例子。
 
-最后就剩下 `ngx_http_hello_world()` 中的 `ngx_http_hello_world_handler()`函数了。它是告诉 nginx，在 HTTP 处理的 11 个阶段中，如果碰到了 hello_world 指令该如何处理，也就是我们这个模块真真做事情的部分。具体的实现大家可以自己下载源码看看，非常简单就不细说了。
+最后就剩下 `ngx_http_hello_world()` 中的 `ngx_http_hello_world_handler()`函数了。它是告诉 nginx，在 HTTP 处理的 11 个阶段中，如果碰到了 hello_world 指令该如何处理，也就是我们这个模块真正做事情的部分。具体的实现大家可以自己下载源码看看，非常简单就不细说了。
 
+
+# 编译成 nginx 动态模块
+
+从 1.9 版本开始，nginx 支持了动态模块。在这之前如果我们要加载一个模块，是需要重新编译 nginx 的，而有了动态模块以后，我们只要把模块编译成一个 so 文件，然后在 nginx.config 里面用 load_module 加载就可以了。
+
+nginx-hello-world-module 本身还没支持编译成动态模块，我们需要小小的修改一下。好在不需要修改源码，只要修改 config 文件就可以了。 以下是修改后的 config 文件，添加了 `ngx_module_link` 部分。
+
+```
+ngx_addon_name=ngx_http_hello_world_module
+
+if test -n "$ngx_module_link"; then
+    ngx_module_type=HTTP
+    ngx_module_name=ngx_http_hello_world_module
+    ngx_module_srcs="$ngx_addon_dir/ngx_http_hello_world_module.c"
+
+    . auto/module
+else
+    HTTP_MODULES="$HTTP_MODULES ngx_http_hello_world_module"
+    NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_hello_world_module.c"
+fi
+```
+
+然后利用 nginx 源码把模块编译成 so 文件。
+
+```
+# ./configure --add-dynamic-module=/path-to/ngx_http_hello_world_module
+# make 
+# cd objs/
+# ls 
+ngx_http_hello_world_module.so
+```
+
+# 加载模块
+
+最后修改 nginx 的配置文件
+
+```
+user www-data;
+worker_processes 1;
+
+load_module   "/path-to/ngx_http_hello_world_module.so";
+
+events {
+        worker_connections 65535;
+}
+
+http{
+        location /test {
+                hello_world;
+        }
+}
+```
+
+最后用 curl 访问 http://ip-address/test，会得到 "hello world"。
 
 
 
