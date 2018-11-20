@@ -65,6 +65,57 @@ static ngx_command_t ngx_http_myfilter_commands =  {
 
 所谓初始化过滤模块，就是把这个 filter 模块插入到 nginx 本身自带的 filter 模块链中一个合适的位置。
 
+```
+static ngx_int_t ngx_http_myfilter_init(ngx_conf_t *cf)
+{
+    ngx_http_next_header_filter = ngx_http_top_header_filter;
+    ngx_http_top_header_filter = ngx_http_myfilter_header_filter;
+
+    ngx_http_next_body_filter = ngx_http_top_body_filter;
+    ngx_http_top_body_filter = ngx_http_myfilter_body_filter;
+
+    return NGX_OK;
+}
+```
+
+其中 ngx_http_myfilter_header_filter() 和 ngx_http_myfilter_body_filter() 就是这个过滤模块**真正做事情的部分**。
+
+## 处理配置项的 ctx 
+
+既然在 nginx.conf 里添加了配置项，那么就需要把它整合到 nginx 中去，`ngx_http_myfilter_module_ctx` 中定义的函数正是这个作用，这一步是要实现他们。
+
+`create_conf` 函数用于分配空间存储配置项结构体 ngx_http_myfilter_conf_t 
+
+```
+static void* ngx_http_myfilter_create_conf(ngx_conf_t *cf)
+{
+    ngx_http_myfilter_conf_t *mycf;
+    mycf = (ngx_http_myfilter_conf_t *)ngx_pcalloc(cf->pool, sizeof(ngx_http_myfilter_conf_t));
+
+    mycf->enable = NGX_CONF_UNSET;
+    return mycf;
+}
+```
+
+`merge_conf` 函数定义如何合并配置项。
+```
+static char *ngx_http_myfilter_merge_conf(ngx_conf_t *cf, void *parent, void *child)
+{
+    ngx_http_myfilter_conf_t *prev = (ngx_http_myfilter_conf_t *)parent;
+    ngx_http_myfilter_conf_t *conf = (ngx_http_myfilter_conf_t *)child;
+
+    ngx_conf_merge_value(conf->enable, prev->enable, 0);
+
+    return NGX_CONF_OK;
+}
+```
+
+## 实现过滤模块的主体函数
+
+真正干事情的函数是 `ngx_http_myfilter_header_filter` 和 `ngx_http_myfilter_body_filter`
+
+
+
 # 参考资料
 - 《深入理解 nginx》
 
