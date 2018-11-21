@@ -27,6 +27,16 @@ nginx 在启动时初始化模块的顺序就是 nginx_modules 数组成员的�
 
 # 开发一个 HTTP 过滤模块
 
+一个简单的过滤模块实现这样的功能：在返回的 http response 中，先检查 header，如果是 200 OK，则在 body 中插入一段字符。如下所示：
+
+```
+$ curl localhost
+-----add-prefix-----<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+```
+
 ## 定义这个过滤模块
 
 参考上一篇博客，基本的套路还是一样，只不过这次 ctx 成员需要定义 postconfiguration / create_loc_conf / merge_loc_conf 
@@ -90,7 +100,8 @@ static ngx_int_t ngx_http_myfilter_init(ngx_conf_t *cf)
 static void* ngx_http_myfilter_create_conf(ngx_conf_t *cf)
 {
     ngx_http_myfilter_conf_t *mycf;
-    mycf = (ngx_http_myfilter_conf_t *)ngx_pcalloc(cf->pool, sizeof(ngx_http_myfilter_conf_t));
+    mycf = (ngx_http_myfilter_conf_t *)
+           ngx_pcalloc(cf->pool, sizeof(ngx_http_myfilter_conf_t));
 
     mycf->enable = NGX_CONF_UNSET;
     return mycf;
@@ -112,8 +123,32 @@ static char *ngx_http_myfilter_merge_conf(ngx_conf_t *cf, void *parent, void *ch
 
 ## 实现过滤模块的主体函数
 
-真正干事情的函数是 `ngx_http_myfilter_header_filter` 和 `ngx_http_myfilter_body_filter`
+真正干事情的函数是 ngx_http_myfilter_header_filter() 和 ngx_http_myfilter_body_filter()
 
+
+header_filter() 所做的事情就是检查 http header 决定要不要加我们的 prefix。其中涉及到用 nginx 提供的 API `ngx_http_get_module_ctx()` 获取当前模块的上下文 ctx ； 以及 API `ngx_http_get_module_loc_conf()` 获取与本模块相关的配置项。
+
+body_filter() 就是根据 ctx 把 prefix 加到 http body 中去，并重新计算 Content-Length 的值。
+
+详细的源码请[移步此处](https://gist.github.com/runzhen/a7f8d12617ae752ee8a61dc070c67267)
+
+
+最后别忘了关系到编译的 config 文件，过滤模块的 config 也与其他类似，也能编译成动态模块，注意要加上 “FILTER” 
+
+```
+ngx_addon_name=ngx_http_myfilter_module
+
+if test -n "$ngx_module_link"; then
+    ngx_module_type=HTTP_FILTER
+    ngx_module_name=ngx_http_myfilter_module
+    ngx_module_srcs="$ngx_addon_dir/ngx_http_myfilter_module.c"
+
+    . auto/module
+else
+    HTTP_FILTER_MODULES="$HTTP_FILTER_MODULES ngx_http_myfilter_module"
+    NGX_ADDON_SRCS= "$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_myfilter_module.c"
+fi
+```
 
 
 # 参考资料
