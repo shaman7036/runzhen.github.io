@@ -161,7 +161,7 @@ impl Person {
 
 # mod 模块和文件夹路径
 
-stackoverflow 上有一个不错的解释 [https://stackoverflow.com/questions/46867652/cannot-import-a-module-in-an-integration-test](https://stackoverflow.com/questions/46867652/cannot-import-a-module-in-an-integration-test)
+stackoverflow 上有一个不错的解释 [传送门](https://stackoverflow.com/questions/46867652/cannot-import-a-module-in-an-integration-test)
 
 > Each file defines a module. Your lib.rs defines a module of the same name as your crate; a mod.rs defines a module of the same name as the directory it's in; every other file defines a module of the name of the file.
 
@@ -172,7 +172,7 @@ stackoverflow 上有一个不错的解释 [https://stackoverflow.com/questions/4
 
 解引用操作，可以被自定义。方法是，实现标准库中的std::ops::Deref和std::ops::DerefMut这两个 trait。
 
-Deref的定义如下所示，DerefMut的唯一区别是返回的是&mut型引用。*trait的定义* 见第一小节。
+Deref的定义如下所示，DerefMut的唯一区别是返回的是&mut型引用。**trait的定义** 见第一小节。
 
 ```
 pub trait Deref {
@@ -197,5 +197,24 @@ impl ops::Deref for String {
     }
 }
 ```
+
+# 泛型
+
+[传送门](https://zhuanlan.zhihu.com/p/22682496)
+
+## impl 中的泛型
+
+impl 也可以使用泛型。特别是当我们希望为某一类类型统一 impl 某个 trait 的时候非常有用。有了这个功能，很多时候就没必要单独为每个类型去重复 impl 了。
+
+```
+impl<T, U> Into<U> for T where U: From<T>
+{
+    fn into(self) -> U {
+        U::from(self)
+    }
+}
+```
+标准库中的 Into 和 From 就是一对功能互逆的 trait。如果 A: Into<B> 意味着 B: From<A>。因此，标准库中写了这样一段代码，意思是，针对所有类型 T，只要满足 U: From<T>，那么就针对此类型 impl Into<U>。有了这样的一个 impl 块之后，我们如果想为自己的两个类型提供互相转换的功能，那么只需 impl From 这一个 trait 就够了，因为反过来的 Into trait 标准库已经帮忙实现好了。
+
 
 
