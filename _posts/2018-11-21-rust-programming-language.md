@@ -214,7 +214,7 @@ impl<T, U> Into<U> for T where U: From<T>
     }
 }
 ```
-标准库中的 Into 和 From 就是一对功能互逆的 trait。如果 A: Into<B> 意味着 B: From<A>。因此，标准库中写了这样一段代码，意思是，针对所有类型 T，只要满足 U: From<T>，那么就针对此类型 impl Into<U>。有了这样的一个 impl 块之后，我们如果想为自己的两个类型提供互相转换的功能，那么只需 impl From 这一个 trait 就够了，因为反过来的 Into trait 标准库已经帮忙实现好了。
+标准库中的 Into 和 From 就是一对功能互逆的 trait。如果 `A: Into<B>` 意味着 `B: From<A>`。因此，标准库中写了这样一段代码，意思是，针对所有类型 T，只要满足 `U: From<T>`，那么就针对此类型 `impl Into<U>`。有了这样的一个 impl 块之后，我们如果想为自己的两个类型提供互相转换的功能，那么只需 impl From 这一个 trait 就够了，因为反过来的 Into trait 标准库已经帮忙实现好了。
 
 
 
