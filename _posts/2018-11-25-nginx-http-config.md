@@ -51,7 +51,11 @@ http {
 
 可以看到，在 http，server，location 三个配置块中都有我们自定义模块的命令 test_cmd。
 
-对于 nginx http 框架而言，在解析 main 级别的配置项时，必须同时创建3个结构体，用于合并之后会解析到的 server，location 配置项。
+对于 nginx http 框架而言，在解析 main 级别的配置项时，必须同时创建3个结构体，用于合并之后会解析到的 server，location 配置项。换句话说：
+
+1. main 配置项，create_main_conf、srv、loc 三个函数都要被调用一次，返回3个结构体。
+2. server 配置项， srv、loc 两个函数都要被调用一次。
+3. location 配置项，loc 函数被调用一次。
 
 在 http 框架处理到某个阶段时，例如在寻找到合适的 location 前，如果试图去取某个模块的配置结构体，将会得到 server 级别的配置，而如果寻找到 location 之后，就会得到 location 结构下的配置。
 
@@ -74,7 +78,7 @@ ngx_http_core_loc_conf_t
 
 在《深入理解 nginx》P354 有详细介绍，还有一张 [Just Carry On](https://ialloc.org/blog/ngx-notes-conf-parsing/) 的配图也不错。
 
-![ngx-conf](/image/2018/ngx-conf.png){:height="500" width="500"}
+![ngx-conf](/image/2018/ngx-conf.png){:height="500" width="600"}
 
 
 说完了所有有关 http 模块配置结构存放位置，再来看一下对于整个 nginx 来说，这一块http 的配置又放在哪呢？还是看上图，在 `ngx_cycle_t` 的 `conf_ctx` 中。
@@ -112,6 +116,20 @@ ngx_http_module
 
 ## server 级别配置项
 
+解析到 server 配置项时，也要创建 ngx_http_conf_ctx_t 结构体，其中 main_conf 指向上级 http 配置项，然后调用所有 http 模块的 create_srv_conf 函数和 create_loc_conf 函数，将返回的结构体指针存到 ngx_http_conf_ctx_t 中。
+
+以 http core module 模块为例，    
+结构体 ngx_http_core_main_conf_t 指针将存到 main_conf 数组里      
+结构体 ngx_http_core_srv_conf_t 指针将存到 srv_conf 数组里      
+结构体 ngx_http_core_loc_conf_t 指针将存到 loc_conf 数组里      
+
+
 ## location 级别配置项
 
+location 配置项基本与上面两个类似，关于 location 和 server 的内存分布关系，参考 《深入理解 nginx》 P360-362
+
 # 合并配置项
+
+
+
+
