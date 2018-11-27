@@ -55,6 +55,29 @@ http {
 
 在 http 框架处理到某个阶段时，例如在寻找到合适的 location 前，如果试图去取某个模块的配置结构体，将会得到 server 级别的配置，而如果寻找到 location 之后，就会得到 location 结构下的配置。
 
+## main 级别配置项
+
+所有和 http 相关模块的配置都放在 ngx_http_conf_ctx_t 结构体中，先来看一下有个大概印象
+
+```
+typedef struct {
+    void        **main_conf;
+    void        **srv_conf;
+    void        **loc_conf;
+} ngx_http_conf_ctx_t;
+```
+回顾本文一开头提到，如果一个模块定义了自己的处理函数，那么通过这些函数生成的结构体（一块内存区域）地址将会存到ngx_http_conf_ctx_t 中。例如
+
+ngx_http_core_main_conf_t    
+ngx_http_core_srv_conf_t     
+ngx_http_core_loc_conf_t      
+
+在《深入理解 nginx》P354 有详细介绍，还有一张 [Just Carry On](https://ialloc.org/blog/ngx-notes-conf-parsing/) 的配图也不错。
+
+![ngx-conf](/image/2018/ngx-conf.png){:height="500" width="500"}
+
+
+说完了所有有关 http 模块配置结构存放位置，再来看一下对于整个 nginx 来说，这一块http 的配置又放在哪呢？还是看上图，在 `ngx_cycle_t` 的 `conf_ctx` 中。
 
 src/core/ngx_cycle.c 中 ngx_init_cycle() 函数关于调用 core module 的 create_conf 函数代码，先判断是不是 core module， 如果是则继续，否则跳过。
 
@@ -86,8 +109,6 @@ ngx_http_module
 
 说明这些模块是所谓的 core module。而如果放在一开始，会看到一大堆输出，表示 nginx 默认编译进可执行文件的所有模块，而且内容与 obj/ngx_modules.c 先后顺序一致。
 
-
-## main 级别配置项
 
 ## server 级别配置项
 
