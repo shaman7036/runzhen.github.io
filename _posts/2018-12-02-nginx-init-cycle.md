@@ -20,3 +20,107 @@ tags: [nginx]
 
 分析 ngx_master_process_cycle() 就会了解 nginx master 进程是如何等待、处理信号，并且启动新的 worker 进程的。
 
+先来看看 ngx_cycle_t 结构体里的成员，这里只列出本文关心的几个:
+
+```
+struct ngx_cycle_s {
+    // 存储所有模块的配置结构体，是个二维数组
+    // 0 = ngx_core_module
+    // 1 = ngx_errlog_module
+    // 3 = ngx_event_module
+    // 4 = ngx_event_core_module
+    // 5 = ngx_epoll_module
+    // 7 = ngx_http_module
+    // 8 = ngx_http_core_module
+    void                  ****conf_ctx;
+
+    // 保存模块数组，可以加载动态模块
+    // 可以容纳所有的模块，大小是ngx_max_module + 1
+    // ngx_cycle_modules()初始化
+    ngx_module_t            **modules;
+
+    // 拷贝模块序号计数器到本cycle
+    // ngx_cycle_modules()初始化
+    ngx_uint_t                modules_n;
+
+    // 标志位，cycle已经完成模块的初始化，不能再添加模块
+    // 在ngx_load_module里检查，不允许加载动态模块
+    ngx_uint_t                modules_used;
+}   
+```
+
+其中最最重要的莫过于 conf_ctx 了，回顾[上一篇博客里的图](/image/2018/ngx-conf.png)，重点关注一下其中 ngx_http_module，需要搞清楚这些配置是怎么解析到 conf_ctx 中去的。
+
+看完了数据结构，现在开始分析 ngx_init_cycle()。以下章节，一级标题表示这段代码或者函数是在 ngx_init_cycle() 中的，二级标题下的代码段或者函数是在上级标题的函数中调用的。
+
+# 分配 cycle->conf_ctx 数组
+
+创建配置结构体数组，大小是总模块数量。  
+
+`cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));`
+
+那么 ngx_max_module 是从哪来的呢？ 还记得 ./configure 生成的 objs/ngx_modules.c 吗？ ngx_preinit_modules() 负责统计所有模块的个数。
+
+# ngx_cycle_modules() 
+
+这个函数名字看起来好像很牛逼很复杂，其实代码非常简单，就是把 objs/ngx_modules.c 的内容复制到 cycle->modules 成员里面，并全部初始化为 NULL。
+
+# 初始化core模块
+
+objs/ngx_modules.c 文件中的 ngx_modules 数组决定了各个模块的顺序，然后因为有 extern 关键字，所以这些模块的定义都在其他文件中。
+
+```
+    for (i = 0; cycle->modules[i]; i++) {
+        // 检查type，只处理core模块，数量很少
+        if (cycle->modules[i]->type != NGX_CORE_MODULE) {
+            continue;
+        }
+
+        //获取core模块的函数表
+        module = cycle->modules[i]->ctx;
+
+        // 创建core模块的配置结构体
+        // 有的core模块可能没有这个函数，所以做一个空指针检查
+        if (module->create_conf) {
+            rv = module->create_conf(cycle);
+            if (rv == NULL) {
+                ngx_destroy_pool(pool);
+                return NULL;
+            }
+            // 存储到cycle的配置数组里，用的是index，不是ctx_index
+            cycle->conf_ctx[cycle->modules[i]->index] = rv;
+        }
+    }
+
+```
+
+针对 cycle->modules[] 数组中的每一个，比如 http 模块:
+
+```
+ngx_module_t  ngx_http_module = {
+    ....
+    &ngx_http_module_ctx,                  /* module context */
+    ....
+    NGX_CORE_MODULE,                       /* module type */
+};
+```
+
+在 ngx_http.c 中，它自己声明了是 core 模块，并且在 ctx 中提供了 create_conf 函数指针（http 的这个指针为 NULL）。
+
+# ngx_conf_parse() 
+
+开始解析配置文件 nginx.conf。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
