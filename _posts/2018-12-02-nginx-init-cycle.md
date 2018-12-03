@@ -109,7 +109,7 @@ ngx_module_t  ngx_http_module = {
 
 # ngx_conf_parse() 
 
-开始解析配置文件 nginx.conf。前面我们调用了每个 Core 类型模块的create_conf()，现在 ngx_conf_parse() 将会调用每个 Core 类型模块的 init_conf() 方法。
+开始解析配置文件 nginx.conf。前面我们调用了每个 Core 类型模块的 create_conf()，现在 ngx_conf_parse() 将会调用每个 Core 类型模块的 init_conf() 方法。
 
 create_conf() 是创建一些模块需要初始化的结构，但是这个结构里面并没有具体的值。init_conf() 是往这些初始化结构里面填写配置文件中解析出来的信息。
 
@@ -123,6 +123,49 @@ http{
 ```
 
 先解析这个配置的时候发现了http这个关键字，然后去各个模块匹配，发现 ngx_http_module 这个模块包含了http命令。它对应的set方法是 ngx_http_block() 。 event模块也有类似的方法，ngx_events_block。
+
+还有的关键字可以自己指定对后续内容的处理方法，比如 type 指令，在 conf/mime.types 文件中能看到这样的：
+
+```
+types {
+    text/html    html htm shtml;
+    text/css     css;
+}
+```
+
+下面就分析一下 ngx_conf_parse() 的源码，因为其中的一个 cf->handler 让我费劲理解了很久。。。
+
+首先，函数的主体操作流程如下：
+
+```
+ngx_conf_parse() {
+    for ( ;; ) {
+        rc = ngx_conf_read_token(cf);
+
+        if (cf->handler) { // 类似 type 这样的命令设置自定义处理函数
+            rv = (*cf->handler)(cf, NULL, cf->handler_conf);
+        }
+        //读到的 include，http，deamon，type 指令都在这里找处理函数
+        rc = ngx_conf_handler(cf, rc); 
+    }
+}
+```
+
+在大多数情况下，cf->handler 的值都是为空的，这样比如读到 http 指令，那么会直接到 ngx_conf_handler()，然后查找处理函数。
+
+但是比如读到了 type 命令，它也是先进入 ngx_conf_handler() 找到自己的处理函数，但是**该处理函数会设置 cf->handler**，导致 type 命令下的子命令被读取后会在 handler 处被处理。
+
+眼见为实，我们可以用 printf 打出一些 log
+
+```
+before read token cf->handler = (nil)
+after read token cf->handler = (nil)
+cmd = types, nelts = 1, cf->handler = (nil)
+
+before read token cf->handler = 0x559b461ddd9b
+after read token cf->handler = 0x559b461ddd9b
+cmd = text/html, nelts = 4, cf->handler = 0x559b461ddd9b
+```
 
 ## ngx_http_block() 
 
