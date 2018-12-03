@@ -105,11 +105,30 @@ ngx_module_t  ngx_http_module = {
 };
 ```
 
-在 ngx_http.c 中，它自己声明了是 core 模块，并且在 ctx 中提供了 create_conf 函数指针（http 的这个指针为 NULL）。
+在 ngx_http.c 中，它自己声明了是核心模块 **NGX_CORE_MODULE**，所以它的 ctx 结构体是 ngx_core_module_t ngx_http_module_ctx，并且在 ctx 中提供了 create_conf 函数指针（http 的这个指针为 NULL）。
 
 # ngx_conf_parse() 
 
-开始解析配置文件 nginx.conf。
+开始解析配置文件 nginx.conf。前面我们调用了每个 Core 类型模块的create_conf()，现在 ngx_conf_parse() 将会调用每个 Core 类型模块的 init_conf() 方法。
+
+create_conf() 是创建一些模块需要初始化的结构，但是这个结构里面并没有具体的值。init_conf() 是往这些初始化结构里面填写配置文件中解析出来的信息。
+
+先使用 ngx_conf_read_token() 先循环逐行逐字符查找，看匹配的字符，获取出cmd, 然后去所有的模块查找对应的cmd,调用那个查找后的 cmd->set 方法。
+
+以 http 模块为例，我们的配置文件中一定有且只有一个
+```
+http{
+
+}
+```
+
+先解析这个配置的时候发现了http这个关键字，然后去各个模块匹配，发现 ngx_http_module 这个模块包含了http命令。它对应的set方法是 ngx_http_block() 。 event模块也有类似的方法，ngx_events_block。
+
+## ngx_http_block() 
+
+在 ngx_conf_parse() 中被调用，解析 `http{}` 配置块，只有出现这个 http 指令才会在`conf_ctx` 里创建http配置，避免内存浪费。
+
+同时调用每个http模块的 create_xxx_conf() 函数，创建配置结构体。
 
 
 
