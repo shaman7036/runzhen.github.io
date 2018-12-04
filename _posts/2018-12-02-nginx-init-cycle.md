@@ -242,6 +242,26 @@ struct ngx_command_s {
 > 变量在conf结构体里的偏移量，可用offsetof得到。主要用于nginx内置的命令解析函数，自己写命令解析函数可以置为0
 
 
+# core 模块初始化
+
+经过了以上几步以后，所有出现在 nginx.conf 配置文件中的指令都已经配置好了，最后对 core模块配置初始化，即调用 core 模块特有的 init_conf 函数。（另一个是create_conf 函数）
+
+```
+   for (i = 0; cycle->modules[i]; i++) {
+        // 只处理core模块，数量很少
+        if (cycle->modules[i]->type != NGX_CORE_MODULE) {
+            continue;
+        }
+        module = cycle->modules[i]->ctx;
+
+        if (module->init_conf) {
+            module->init_conf(cycle,
+                cycle->conf_ctx[cycle->modules[i]->index])
+
+    }
+```
+
+最后，ngx_init_cycle() 剩下的部分主要是关于环境变量、打开文件、日志对象、共享内存等设置，与模块的配置无关，限于篇幅就不再写下去了，等到以后分析其他代码时，如果遇到了再一并分析。
 
 
 
