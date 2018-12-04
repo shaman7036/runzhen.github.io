@@ -63,7 +63,7 @@ struct ngx_cycle_s {
 
 # ngx_cycle_modules() 
 
-这个函数名字看起来好像很牛逼很复杂，其实代码非常简单，就是把 objs/ngx_modules.c 的内容复制到 cycle->modules 成员里面，并全部初始化为 NULL。
+这个函数名字看起来好像很牛逼很复杂，其实代码非常简单，就是把 objs/ngx_modules.c 的内容复制到 cycle->modules 成员里面。
 
 # 初始化core模块
 
@@ -109,9 +109,9 @@ ngx_module_t  ngx_http_module = {
 
 在 ngx_init_cycle() 函数中：
 
-1. 先调用每个 Core 类型模块的 create_conf()。
-2. 接着 ngx_conf_parse() 解析配置文件。
-3. 再调用每个 Core 类型模块的 init_conf() 方法。
+1. 先调用每个 Core 类型模块的 create_conf().    (本小节)
+2. 接着 ngx_conf_parse() 解析配置文件。        （下一节）
+3. 再调用每个 Core 类型模块的 init_conf() 方法. （再下一节） 
 
 create_conf() 是创建一些模块需要初始化的结构，但是这个结构里面并没有具体的值。
 
@@ -225,30 +225,21 @@ cmd = text/html, nelts = 4, cf->handler = 0x559b461ddd9b
 看完了 ngx_conf_handler() 对 ngx_command_t 类型各成员的使用 (cmd)，再回过头来看一下 ngx_command_t。
 ```
 struct ngx_command_s {
-    ngx_str_t             name;
-
-    //指令的类型，是NGX_CONF_XXX的组合，决定指令出现的位置、参数数量、类型等
-    // NGX_HTTP_MAIN_CONF/NGX_HTTP_SRV_CONF/NGX_HTTP_LOC_CONF
-    ngx_uint_t            type;
-    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-
-    // 专门给http/stream模块使用，决定存储在main/srv/loc的哪个层次
-    // NGX_HTTP_MAIN_CONF_OFFSET/NGX_HTTP_SRV_CONF_OFFSET/NGX_HTTP_LOC_CONF_OFFSET
-    // NGX_STREAM_MAIN_CONF_OFFSET
-    // 其他类型的模块不使用，直接为0
+    ...
     ngx_uint_t            conf;
-
-    // 变量在conf结构体里的偏移量，可用offsetof得到
-    // 主要用于nginx内置的命令解析函数，自己写命令解析函数可以置为0
     ngx_uint_t            offset;
-
-    //解析后处理的数据
-    void                 *post;
 };
 ```
+对于大多数模块来说，conf 和 offset 都设置为 NULL，但是从 ngx_conf_handler() 可以看到他们什么时候会被调用。
 
+1) conf 
+> 专门给http/stream模块使用，决定存储在main/srv/loc的哪个层次。      
+> NGX_HTTP_MAIN_CONF_OFFSET/ NGX_HTTP_SRV_CONF_OFFSET/ NGX_HTTP_LOC_CONF_OFFSET    
+> NGX_STREAM_MAIN_CONF_OFFSET        
+> 其他类型的模块不使用，直接为0
 
-
+2) offset 
+> 变量在conf结构体里的偏移量，可用offsetof得到。主要用于nginx内置的命令解析函数，自己写命令解析函数可以置为0
 
 
 
