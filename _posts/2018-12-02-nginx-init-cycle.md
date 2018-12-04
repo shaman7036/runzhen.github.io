@@ -65,7 +65,7 @@ struct ngx_cycle_s {
 
 这个函数名字看起来好像很牛逼很复杂，其实代码非常简单，就是把 objs/ngx_modules.c 的内容复制到 cycle->modules 成员里面。
 
-# 初始化core模块
+# core 模块配置初始化
 
 objs/ngx_modules.c 文件中的 ngx_modules 数组决定了各个模块的顺序，然后因为有 extern 关键字，所以这些模块的定义都在其他文件中。
 
