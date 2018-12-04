@@ -175,11 +175,77 @@ after read token cf->handler = 0x559b461ddd9b
 cmd = text/html, nelts = 4, cf->handler = 0x559b461ddd9b
 ```
 
-## ngx_http_block() 
+# ngx_conf_handler()
 
-在 ngx_conf_parse() 中被调用，解析 `http{}` 配置块，只有出现这个 http 指令才会在`conf_ctx` 里创建http配置，避免内存浪费。
+比如在 config parse 函数中读到了配置文件的 “http” 指令，那么在这个函数中，就需要遍历 cycle->modules[] 中的所有模块，找到 http 指令的处理函数，然后调用该函数处理配置文件中的配置。
 
-同时调用每个http模块的 create_xxx_conf() 函数，创建配置结构体。
+```
+    ngx_command_t  *cmd;
+    // 遍历所有模块
+    for (i = 0; cf->cycle->modules[i]; i++) {
+
+        for ( /* void */ ; cmd->name.len; cmd++) {
+            // 先逐个 strcmp(), 找到对应的含有这个指令的模块
+            ....
+
+            // 指令的正确行检查完毕，现在要确定结构体的存储位置
+            conf = NULL;
+            
+            if (cmd->type & NGX_DIRECT_CONF) {
+                // NGX_DIRECT_CONF，直接存储在cf->ctx数组里
+                // 这个通常是core模块
+                conf = ((void **) cf->ctx)[cf->cycle->modules[i]->index];    
+
+            } else if (cmd->type & NGX_MAIN_CONF) {
+                // NGX_MAIN_CONF，里面存储一个void**指针
+                // 例如核心模块http/stream
+                conf = &(((void **) cf->ctx)[cf->cycle->modules[i]->index]);   
+
+            } else if (cf->ctx) {
+                // 大部分普通模块不会使用NGX_DIRECT_CONF、NGX_MAIN_CONF
+
+                // 对于http/stream模块有意义，其他模块无用
+                // cf->ctx是有三个数组的结构体，用cmd->conf偏移量得到数组位置
+                confp = *(void **) ((char *) cf->ctx + cmd->conf);
+
+                if (confp) {
+                    // 得到在main_conf/srv_conf/loc_conf数组里的模块对应配置结构体
+                    // 注意使用的是ctx_index
+                    conf = confp[cf->cycle->modules[i]->ctx_index];
+                }
+            }
+
+            // 调用指令数组里的函数解析，此时的conf指向正确的存储位置
+            // cf->args里存储的是指令参数
+            rv = cmd->set(cf, cmd, conf);
+        }
+    }  
+```
+
+看完了 ngx_conf_handler() 对 ngx_command_t 类型各成员的使用 (cmd)，再回过头来看一下 ngx_command_t。
+```
+struct ngx_command_s {
+    ngx_str_t             name;
+
+    //指令的类型，是NGX_CONF_XXX的组合，决定指令出现的位置、参数数量、类型等
+    // NGX_HTTP_MAIN_CONF/NGX_HTTP_SRV_CONF/NGX_HTTP_LOC_CONF
+    ngx_uint_t            type;
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+
+    // 专门给http/stream模块使用，决定存储在main/srv/loc的哪个层次
+    // NGX_HTTP_MAIN_CONF_OFFSET/NGX_HTTP_SRV_CONF_OFFSET/NGX_HTTP_LOC_CONF_OFFSET
+    // NGX_STREAM_MAIN_CONF_OFFSET
+    // 其他类型的模块不使用，直接为0
+    ngx_uint_t            conf;
+
+    // 变量在conf结构体里的偏移量，可用offsetof得到
+    // 主要用于nginx内置的命令解析函数，自己写命令解析函数可以置为0
+    ngx_uint_t            offset;
+
+    //解析后处理的数据
+    void                 *post;
+};
+```
 
 
 
