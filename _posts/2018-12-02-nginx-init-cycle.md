@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: no
-title: "nginx 启动流程之 init cycle"
+title: "nginx 启动流程之 ngx_init_cycle()"
 category: "nginx"
 tags: [nginx]
 ---
