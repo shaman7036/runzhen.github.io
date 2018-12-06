@@ -121,7 +121,7 @@ void ngx_http_process_request(ngx_http_request_t *r) {
 ```
 第一行，头部读取完毕之后，把链接的读写事件 handler 都设置为 ngx_http_request_handler，这个函数内实际调用 write_event_handler 或者 read_event_handler。
 
-第三行，把请求的读事件设置为 ngx_http_block_reading(), 注意：第一行是把 “链接” 的 handler，这里是 “请求” 的 handler。
+第三行，把请求的读事件设置为 ngx_http_block_reading(), 注意：**第一行是把 “链接” 的 handler，这里是 “请求” 的 handler**。
 
 第四行，调用 ngx_http_handler(), 马上开始运行 http 的 11 个 phase
 
@@ -146,6 +146,20 @@ ngx_http_core_run_phases(ngx_http_request_t *r){
 }
 ```
 
+以上的函数调用过程，也可以通过 gdb 的 backtrace 得到佐证。
+
+```
+#0  ngx_http_core_run_phases () 
+#1  ngx_http_handler () 
+#2  ngx_http_process_request ()
+#3  ngx_http_process_request_headers () 
+#4  ngx_http_process_request_line ()
+#5  ngx_http_wait_request_handler () 
+#6  ngx_epoll_process_events ()
+#7  ngx_process_events_and_timers ()
+#8  ngx_single_process_cycle ()
+#9  main (argc=3, argv=<optimized out>)
+```
 
 
 
