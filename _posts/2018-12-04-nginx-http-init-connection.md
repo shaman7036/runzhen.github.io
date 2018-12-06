@@ -86,15 +86,66 @@ void ngx_http_wait_request_handler() {
 
 最后的 ngx_http_process_request_line(rev) 要在设置给 handler 之后立马调用一次，是因为：
 
-1）改变读事件的 handler，之后再有数据来将会调用 request_line       
-2）epoll 的 ET 触发模式，需要立即处理不然就没有了。而
+1）改变读事件的 handler，之后再有数据来将会调用 ngx_http_process_request_line       
+2）epoll 的 ET 触发模式，需要立即处理不然就没有了。
 
 
 # ngx_http_process_request_line()
 
 本函数调用recv读取数据，解析出请求行信息,存在 r->header_in里。使用用无限循环，保证读取完数据，如果返回 again ，说明客户端发送的数据不足，会继续读取。
 
-在请求行处理完毕后，设置读事件处理函数 process_request_headers
+在某些特殊情况下，比如客户端发来的请求头部特别大，导致之前预分配的 buffer 不够，那么在这个函数中也会增大 buffer。
+
+最后，请求行处理完毕，设置读事件处理函数 ngx_http_process_request_headers()
+
+# ngx_http_process_request_headers()
+
+这个函数大体逻辑与前一个 request_line 类似，我在看到这个函数的时候，总是与前面的 ngx_http_process_request_line() 混淆，后来仔细看了下，发现前一个叫 “request line”，这个叫 “request headers”，所以前面一个是值读取 “请求行”，比如 GET/POST 之类的；现在这个函数才是处理其他的头部信息。
+
+在读取了完整的请求头部之后，调用 ngx_http_process_request() 做处理。
+
+# ngx_http_process_request()
+
+这个函数主要做了下面几件事。
+
+```
+void ngx_http_process_request(ngx_http_request_t *r) {
+ 
+    c->read->handler = ngx_http_request_handler;
+    c->write->handler = ngx_http_request_handler;
+
+    r->read_event_handler = ngx_http_block_reading;
+
+    ngx_http_handler(r);
+}
+```
+第一行，头部读取完毕之后，把链接的读写事件 handler 都设置为 ngx_http_request_handler，这个函数内实际调用 write_event_handler 或者 read_event_handler。
+
+第三行，把请求的读事件设置为 ngx_http_block_reading(), 注意：第一行是把 “链接” 的 handler，这里是 “请求” 的 handler。
+
+第四行，调用 ngx_http_handler(), 马上开始运行 http 的 11 个 phase
+
+# ngx_http_core_run_phases()
+
+ngx_http_handler 中调用这个 run phase 函数，其本身非常简单，就把代码贴在下面，而有关 run 这 11 个 phase，后续的博客再分析。
+
+```
+ngx_http_core_run_phases(ngx_http_request_t *r){
+
+    ngx_http_phase_handler_t   *ph;
+    ngx_http_core_main_conf_t  *cmcf;
+
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    ph = cmcf->phase_engine.handlers;
+
+    while (ph[r->phase_handler].checker) {
+
+        rc = ph[r->phase_handler].checker(r, &ph[r->phase_handler]);
+    }
+}
+```
+
 
 
 
