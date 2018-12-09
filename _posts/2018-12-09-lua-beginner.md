@@ -128,11 +128,9 @@ else
 end
 ```
 
-## 函数多值返回
+## 函数多值返回和可变参数
 
-Lua函数可以返回多个结果值，比如string.find，其返回匹配串"开始和结束的下标"
-
-## 函数可变参数
+Lua函数可以返回多个结果值，比如string.find()，其返回匹配串"开始和结束的下标"。
 
 这个比较有意思，在函数参数列表中使用三点 ... 表示函数有可变的参数。
 
@@ -227,7 +225,42 @@ end
 
 其他高级的 无状态的迭代器 或者 多状态迭代器，[传送门](http://www.runoob.com/lua/lua-iterators.html)
 
-## 
+## coroutine 协程
+
+一个简单的例子展示用 lua coroutine 完成经典的 生产者-消费者 问题。
+
+```
+local newProductor
+
+function productor()
+     local i = 0
+     while true do
+          i = i + 1
+          send(i)     -- 将生产的物品发送给消费者
+     end
+end
+
+function consumer()
+     while true do
+          local i = receive() -- 从生产者那里得到物品
+          print(i)
+     end
+end
+
+function receive()
+     local status, value = coroutine.resume(newProductor)
+     return value
+end
+
+function send(x)
+     coroutine.yield(x)     
+     -- x表示需要发送的值，值返回以后，就挂起该协同程序
+end
+
+-- 启动程序
+newProductor = coroutine.create(productor)
+consumer()
+```
 
 
 
