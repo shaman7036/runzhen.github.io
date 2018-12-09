@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: no
-title: "Lua 语法入门"
+title: "Lua 语法知识点记录"
 category: "nginx"
 tags: [nginx]
 ---
@@ -158,5 +158,77 @@ function average(...)
    print("总共传入 " .. select("#",...) .. " 个数")
 end
 ```
+## 运算符
+
+1. and / or / not 逻辑运算符
+2. `~=`  不等于
+3. `..`  连接两个字符串
+4. `#`   一元运算符，返回字符串或表的长度
+
+
+## 字符串操作
+
+列举 lua 内置的一些字符串操作函数，这部分内容比较细节，[详细见此处](http://www.runoob.com/lua/lua-strings.html)
+
+1. string.upper()
+2. string.lower()
+3. string.gsub(mainString,findString,replaceString,num)，mainString为要替换的字符串， findString 为被替换的字符，replaceString 要替换的字符，num 替换次数
+4. string.find (str, substr, [init, [end]])
+5. string.reverse(arg)
+6. string.format(...) 
+7. string.char(arg) 和 string.byte(arg[,int])，char 将整型数字转成字符并连接， byte 转换字符为整数值
+8. string.len(arg)
+9. string.rep(string, n)
+10. string.gmatch(str, pattern)，返回一个迭代器函数，每一次调用这个函数，返回一个在字符串 str 找到的下一个符合 pattern 描述的子串。如果参数 pattern 描述的字符串没有找到，迭代函数返回nil。
+11. string.match(str, pattern, init)，只寻找源字串str中的第一个配对
+
+其中有关模式匹配的正则表达式规则，详细内容见上面的链接。
+
+## 多维数组
+
+前面的例子都是一维数组，现在看看一个二维数组的例子：
+
+```
+array = {}
+for i=1,3 do
+   array[i] = {}
+      for j=1,3 do
+         array[i][j] = i*j
+      end
+end
+
+-- 访问数组
+for i=1,3 do
+   for j=1,3 do
+      print(array[i][j])
+   end
+end
+```
+
+## Lua 迭代器
+
+如果 table tlb 是一个 k-v 结构的表，那么像下面这样迭代
+
+```
+for k, v in pairs(tbl) do
+    print(k, v)
+end
+```
+如果 table 是一个一位数组，用 ipair() 就可以了。
+
+```
+array = {"Lua", "Tutorial"}
+
+for key,value in ipairs(array) 
+do
+   print(key, value)
+end
+```
+
+其他高级的 无状态的迭代器 或者 多状态迭代器，[传送门](http://www.runoob.com/lua/lua-iterators.html)
+
+## 
+
+
 
 
