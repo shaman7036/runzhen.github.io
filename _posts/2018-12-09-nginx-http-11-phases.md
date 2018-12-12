@@ -81,9 +81,9 @@ ngx_http_core_run_phases(ngx_http_request_t *r){
 
 再回头看看 ngx_http_init_phase_handlers() 的调用者，会发现是在 ngx_http_block()，原来就是在 http 模块的初始化函数中，惊不惊喜意不意外？
 
-细看这个函数的实现，就是先计算数组大小，然后申请一块内存给 phase_engine，而如何计算数组大小呢？看代码是从 cmcf->phases[] 数组获得的。
+细看这个函数的实现，就是先计算数组大小，然后申请一块内存给 phase_engine，而如何计算数组大小呢？看代码是从 cmcf->phases[].handlers 数组获得的。
 
-那么哪些模块可以被加入到 phases[] 数组呢？ 这个还没搞清楚。
+那么哪些模块可以被加入到 phases[].handlers 数组呢？ 
 
 可以在代码中加一个简单的 printf 就能知道 11 个阶段中，每个阶段各有多少个 handler 需要加入到 phase_engine数组中。
 
@@ -106,7 +106,31 @@ n = 11, phase[8].handlers.nelts = 2
 n = 14, phase[9].handlers.nelts = 3
 ```
 
+即使这样，还是没有回答刚才的问题，哪些模块被加入到 phases[].handlers 数组呢？ 通过看 http static module 来解答这个问题。
 
+# ngx_http_static_module 模块
 
+这个 ngx_http_static_module 模块是干什么的呢？ 从名字就能看出来，它是给 nginx 提供最最基础的 http 静态文件访问功能的，比如返回 index.html 给客户端。它工作在 Content 阶段。
+
+这个模块一共 300 行源码，逻辑清晰简单。我们先来看一下它的 init 函数。
+```
+ngx_http_static_init(ngx_conf_t *cf)
+{
+    ngx_http_handler_pt        *h;
+    ngx_http_core_main_conf_t  *cmcf;
+
+    cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+
+    // 使用CONTENT_PHASE
+    h = ngx_array_push(&cmcf->phases[NGX_HTTP_CONTENT_PHASE].handlers);
+
+    // 添加到phases数组，完成注册
+    *h = ngx_http_static_handler;
+
+    return NGX_OK;
+}
+```
+
+可以看到，static 模块自己把自己加入到了 Content 阶段的 handlers 数组中。
 
 
