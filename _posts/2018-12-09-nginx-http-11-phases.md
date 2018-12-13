@@ -133,4 +133,38 @@ ngx_http_static_init(ngx_conf_t *cf)
 
 可以看到，static 模块自己把自己加入到了 Content 阶段的 handlers 数组中。
 
+在网上看 ngx_http_static_module 模块的代码，发现在 ctx 结构体的 “postconfiguration”， 注册了 ngx_http_static_init 函数，那我们的问题就是，这个函数是做什么的？以及在什么时候调用？
+
+在查阅了[一些资料](http://tengine.taobao.org/book/chapter_12.html)以后整理如下：
+
+## 多阶段执行链
+
+nginx按请求处理的执行顺序将处理流程划分为多个阶段，一般每个阶段又可以注册多个模块处理函数，nginx按阶段将这些处理函数组织成了一个执行链，这个执行链保存在http主配置（ngx_http_core_main_conf_t）的phase_engine字段中。
+
+```
+typedef struct {
+    ngx_http_phase_handler_t  *handlers;
+    ngx_uint_t                 server_rewrite_index;
+    ngx_uint_t                 location_rewrite_index;
+} ngx_http_phase_engine_t;
+```
+其中handlers字段即为执行链，实际上它是一个数组，而每个元素之间又被串成链表，从而允许执行流程向前，或者向后的阶段跳转。
+
+```
+struct ngx_http_phase_handler_s {
+    ngx_http_phase_handler_pt  checker;
+    ngx_http_handler_pt        handler;
+    ngx_uint_t                 next;
+};
+```
+其中checker和handler都是函数指针，相同阶段的节点具有相同的checker函数，handler字段保存的是模块处理函数，一般在checker函数中会执行当前节点的handler函数，但是例外的是NGX_HTTP_FIND_CONFIG_PHASE，NGX_HTTP_POST_REWRITE_PHASE，NGX_HTTP_POST_ACCESS_PHASE和NGX_HTTP_TRY_FILES_PHASE这4个阶段不能注册模块函数。next字段为快速跳跃索引，多数情况下，执行流程是按照执行链顺序的往前执行，但在某些执行阶段的checker函数中由于执行了某个逻辑可能需要回跳至之前的执行阶段，也可能需要跳过之后的某些执行阶段，next字段保存的就是跳跃的目的索引。
+
+和建立执行链相关的数据结构都保存在http主配置中，一个是phases字段，另外一个是phase_engine字段。其中phases字段为一个数组，它的元素个数等于阶段数目，即每个元素对应一个阶段。而phases数组的每个元素又是动态数组（ngx_array_t），每次模块注册处理函数时只需要在对应阶段的动态数组增加一个元素用来保存处理函数的指针。由于在某些执行阶段可能需要向后，或者向前跳转，简单的使用2个数组并不方便，所以nginx又组织了一个执行链，保存在了phase_engine字段，其每个节点包含一个next域用来保存跳跃目的节点的索引。
+
+而执行链的建立则在nginx初始化的 `post config阶段` 之后调用ngx_http_init_phase_handlers函数完成。
+
+所以，说来说去，都是在解析 http{} 配置的处理函数 `ngx_http_block()` 中处理的。
+
+
+
 
