@@ -159,11 +159,19 @@ struct ngx_http_phase_handler_s {
 ```
 其中checker和handler都是函数指针，相同阶段的节点具有相同的checker函数，handler字段保存的是模块处理函数，一般在checker函数中会执行当前节点的handler函数，但是例外的是NGX_HTTP_FIND_CONFIG_PHASE，NGX_HTTP_POST_REWRITE_PHASE，NGX_HTTP_POST_ACCESS_PHASE和NGX_HTTP_TRY_FILES_PHASE这4个阶段不能注册模块函数。next字段为快速跳跃索引，多数情况下，执行流程是按照执行链顺序的往前执行，但在某些执行阶段的checker函数中由于执行了某个逻辑可能需要回跳至之前的执行阶段，也可能需要跳过之后的某些执行阶段，next字段保存的就是跳跃的目的索引。
 
-和建立执行链相关的数据结构都保存在http主配置中，一个是phases字段，另外一个是phase_engine字段。其中phases字段为一个数组，它的元素个数等于阶段数目，即每个元素对应一个阶段。而phases数组的每个元素又是动态数组（ngx_array_t），每次模块注册处理函数时只需要在对应阶段的动态数组增加一个元素用来保存处理函数的指针。由于在某些执行阶段可能需要向后，或者向前跳转，简单的使用2个数组并不方便，所以nginx又组织了一个执行链，保存在了phase_engine字段，其每个节点包含一个next域用来保存跳跃目的节点的索引。
+和建立执行链相关的数据结构都保存在http主配置中，一个是phases字段，另外一个是phase_engine字段。其中phases字段为一个数组，它的元素个数等于阶段数目，即每个元素对应一个阶段。
+
+而phases数组的每个元素又是动态数组（ngx_array_t），每次模块注册处理函数时只需要在对应阶段的动态数组增加一个元素用来保存处理函数的指针。
+
+由于在某些执行阶段可能需要向后，或者向前跳转，简单的使用2个数组并不方便，所以nginx又组织了一个执行链，保存在了phase_engine字段，其每个节点包含一个next域用来保存跳跃目的节点的索引。这就是为什么有 phases 和 phase_engine 两个看上去类似的数组的原因。
 
 而执行链的建立则在nginx初始化的 `post config阶段` 之后调用ngx_http_init_phase_handlers函数完成。
 
-所以，说来说去，都是在解析 http{} 配置的处理函数 `ngx_http_block()` 中处理的。
+所以，说来说去，都是在解析 http{} 配置的处理函数 `ngx_http_block()` 中处理的。我们再来回顾一下这个函数：
+
+```
+
+```
 
 
 
