@@ -243,3 +243,26 @@ fn main() {
     });
 }
 ```
+
+# Learn by examples
+
+```
+fn bench_yield(n: i32) {
+    let times = MAX/n;
+    let ths: Vec<_> = (0..n)
+        .into_iter()
+        .map(|_| thread::spawn(move || for _ in 0..times {
+            unsafe{
+                libc::syscall(libc::SYS_sched_yield);
+            }
+        })).collect();
+
+    for th in ths {
+        th.join().unwarp();
+    }
+}
+```
+
+`thread::spawn(move`  move 闭包，经常与 thread::spawn 一起使用，它允许我们在一个线程中使用另一个线程的数据。
+
+
