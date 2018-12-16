@@ -20,7 +20,9 @@ tags: [rust]
 
 # C 调用 Rust 动态库
 
-首先是用 cargo new NAME --lib 创建一个新项目，然后编辑 src/lib.rs
+## Rust 部分
+
+首先是用 `cargo new NAME --lib` 创建一个新项目，然后编辑 src/lib.rs
 
 ```
 #![crate_type = "dylib"]
@@ -45,6 +47,8 @@ crate-type = ["dylib"]
 
 最后 cargo build， 就能在 target/debug/ 目录下找到动态链接库 libdouble_input.so 
 
+## C 部分
+
 然后准备一个 C 文件，也非常简单:
 ```
 extern int32_t double_input(int32_t input);
@@ -64,16 +68,21 @@ int main() {
 
 其中 -L 选项说明库文件所在的路径，-l 说明库文件的名字。
 
+## 运行时
+
 通过上面的步骤，我们生成了一个 test 可执行文件，现在运行它。
 
 ```
 $ ./test
-./test: error while loading shared libraries: libdouble_input.so: cannot open shared object file: No such file or directory
+./test: error while loading shared libraries: libdouble_input.so: 
+cannot open shared object file: No such file or directory
 ```
 
 系统无法找到库。虽然我们在编译时(compile time)提供了.so文件的位置，但这个信息并没有写入test可执行文件，所以在程序执行期间的动态链接时，默认的搜索路径下找不到这个库。
 
-有两种方法解决这个问题，一个是设置 LD_LIBRARY_PATH **环境变量**。比如:
+有两种方法解决这个问题，
+
+1）一个是设置 LD_LIBRARY_PATH **环境变量**。比如:
 
 `$export LD_LIBRARY_PATH=.`
 
@@ -81,7 +90,7 @@ $ ./test
 
 环境变量的坏处是，它会影响所有的可执行程序。
 
-另一个解决方案，即提供 `-rpath` 选项，将搜索路径信息写入test文件(rpath代表runtime path)，就不需要设置环境变量了。
+2）另一个解决方案，即提供 `-rpath` 选项，将搜索路径信息写入test文件(rpath代表runtime path)，就不需要设置环境变量了。
 
 `$gcc -g -o test test.c -ldouble_input -L. -Wl,-rpath=.`
 
@@ -106,7 +115,28 @@ $ ldd test
 
 # C 调用 Rust 静态库
 
+有了上一步动态链接的成功例子，调用静态库也依葫芦画瓢了。需要注意的是：
 
+1）Rust 中的 dylib 要改成 staticlib      
+2）编译 C，静态链接 .a 库时，命令不一样。
+
+静态链接时 gcc 的参数是这样的：
+
+`LDFLAGS := -Wl,-Bstatic -ldouble_input -Wl,-Bdynamic -lpthread -ldl`
+
+它的意思是仅对 double_input.so 使用静态链接，其他的库依旧使用动态链接。
+
+因为 rust 或者是 c 在编译时都会加入一些默认的库，而这些库没有静态版本（也就是没有 .a 的版本），所以如果不加后面 dymamic 的部分，编译出错。
+
+我们可以比较一下使用动态链接的 test 文件和静态链接的 test 文件大小，可见静态链接的明显大很多。
+
+```
+$ ls -lh test
+-rwxrwxr-x 1 rz rz 11K Dec 16 15:30 test
+
+$ ls -lh test
+-rwxrwxr-x 1 rz rz 3.6M Dec 16 15:04 test
+```
 
 # Rust 调用 C 源码
 
