@@ -244,6 +244,26 @@ fn main() {
 }
 ```
 
+# 迭代器与 consumer
+
+`let num = (1..101).collect::<Vec<i32>>();` 
+
+collect 作用在一个迭代器上，收集所有的元素。 `::<Vec<i32>>` 的作用是给一个提示，告诉编译器数据类型。
+
+collect() 是一个 common consumer, 还有一个常用的是 find()。
+
+除了 common consumer 之外，迭代器还有一个 Iterator adaptors，它作用在一个迭代器上，然后修改它的值，并且产生一个新迭代器。
+
+最常见的就是 map(), take(), filter()
+
+> filter() is an adapter that takes a closure as an argument. This closure returns true or false. The new iterator filter() produces only the elements that the closure returns true
+
+> take(n) will return an iterator over the next n elements of the original iterator.
+
+
+[官方文档](https://doc.rust-lang.org/1.8.0/book/iterators.html)
+
+
 # Learn by examples
 
 ```
@@ -263,6 +283,10 @@ fn bench_yield(n: i32) {
 }
 ```
 
-`thread::spawn(move`  move 闭包，经常与 thread::spawn 一起使用，它允许我们在一个线程中使用另一个线程的数据。
+`thread::spawn(move)`  move 闭包，经常与 thread::spawn 一起使用，它允许我们在一个线程中使用另一个线程的数据。在参数列表前使用 move 关键字强制闭包获取其使用的环境值的所有权。这个技巧在将闭包传递给新线程以便将数据移动到新线程中时最为实用。
+
+`0..n` 是从 0 到 n 之间整数的缩写，之后的 into_iter，collect 都是有关[迭代器](https://doc.rust-lang.org/1.8.0/book/iterators.html)的语法。
+
+
 
 
