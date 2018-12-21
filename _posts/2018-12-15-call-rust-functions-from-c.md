@@ -144,7 +144,7 @@ rust 语言的官方文档给出了一个非常权威的方式，[传送门](htt
 
 所以我们只要依葫芦画瓢就行了。需要注意的几点：
 
-1）在主目录下建一个 build.rs      
+1) 在主目录下建一个 build.rs      
 2) Cargo.toml 中需要指定 build-dependencies    
 
 ```
@@ -152,6 +152,8 @@ rust 语言的官方文档给出了一个非常权威的方式，[传送门](htt
 cc = "1.0"
 ```
 其实 build.rs 的作用就是用 rust cc 库提供的函数把 C 代码编译成 rust 能识别的库，然后直接调用它。
+
+[官方文档](https://doc.rust-lang.org/cargo/reference/build-scripts.html)介绍 build.rs 以及由它生成的部分 output 会影响 Cargo 的编译行为。
 
 一个简单的例子[在这里](https://github.com/runzhen/rust_ffi.git)
 
